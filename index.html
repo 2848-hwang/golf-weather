@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<!-- saved from url=(0060)file:///C:/Users/blue2/Downloads/golf_weather_app%20(1).html -->
+<html lang="ko"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="골프날씨">
+<meta name="theme-color" content="#1a4a2e">
+<title>골프 날씨</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#eef3ee;min-height:100vh;color:#1a2e1a;padding-bottom:40px}
+#hdr{background:#1a4a2e;color:#fff;padding:14px 16px;display:flex;align-items:center;gap:8px}
+#hdr h1{font-size:17px;font-weight:600;flex:1}
+#srch{background:#fff;padding:12px 14px;border-bottom:1px solid #dde8dd;position:sticky;top:0;z-index:99}
+#srow{display:flex;gap:8px}
+#inp{flex:1;padding:11px 14px;border:1.5px solid #b8ccb8;border-radius:12px;font-size:16px;outline:none;background:#f8fbf8;color:#1a2e1a}
+#inp:focus{border-color:#1a4a2e;background:#fff}
+#goBtn{background:#1a4a2e;color:#fff;border:none;padding:11px 18px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer}
+#slist{margin-top:8px;display:none;background:#fff;border:1px solid #ccdacc;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.12);max-height:300px;overflow-y:auto}
+.si{padding:14px;cursor:pointer;font-size:15px;border-bottom:1px solid #f0f5f0;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.si:last-child{border-bottom:none}
+.si:active{background:#f0f7f0}
+.si-loc{font-size:12px;color:#6a8a6a;flex-shrink:0}
+#main{padding:14px;max-width:600px;margin:0 auto}
+.empty{text-align:center;padding:60px 16px;color:#7a9a7a}
+.loader{text-align:center;padding:50px 16px;color:#4a7a4a}
+.spin{display:block;font-size:36px;margin-bottom:12px;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.errmsg{background:#fff3f0;border:1px solid #fcc;border-radius:12px;padding:16px;color:#c04020;font-size:14px;line-height:1.7}
+#curCard{background:linear-gradient(145deg,#1a4a2e,#2d6b45);color:#fff;border-radius:18px;padding:18px 16px;margin-bottom:12px}
+.cloc{font-size:12px;opacity:.75;margin-bottom:8px}
+.crow{display:flex;justify-content:space-between;align-items:flex-start}
+.btemp{font-size:56px;font-weight:200;line-height:1}
+.feel{font-size:13px;opacity:.8;margin-top:4px}
+.wico{font-size:52px;line-height:1}
+.meta4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.mi{background:rgba(255,255,255,.16);border-radius:10px;padding:10px 6px;text-align:center}
+.mi-v{font-size:15px;font-weight:600}
+.mi-l{font-size:10px;opacity:.8;margin-top:2px}
+#gibox{border-radius:14px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.gi-n{font-size:42px;font-weight:700;line-height:1;min-width:56px}
+.gi-h{font-size:15px;font-weight:600}
+.gi-s{font-size:12px;margin-top:3px;opacity:.85}
+#tabs{display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:2px}
+#tabs::-webkit-scrollbar{display:none}
+.tb{background:#fff;border:1.5px solid #d0ddd0;border-radius:10px;padding:9px 16px;font-size:14px;font-weight:500;color:#4a6a4a;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.tb.on{background:#1a4a2e;color:#fff;border-color:#1a4a2e}
+.sec{font-size:12px;font-weight:600;color:#5a7a5a;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px}
+#hscroll{overflow-x:auto;margin-bottom:12px;-webkit-overflow-scrolling:touch}
+#hrow{display:flex;gap:6px;width:max-content;padding-bottom:4px}
+.hc{background:#fff;border:1.5px solid #dde8dd;border-radius:12px;padding:10px 8px;text-align:center;width:66px;flex-shrink:0}
+.hc.now{border-color:#1a4a2e;background:#f0f8f2}
+.ht{font-size:11px;color:#6a8a6a;margin-bottom:4px}
+.hico{font-size:20px;margin-bottom:2px}
+.htemp{font-size:14px;font-weight:600}
+.hrain{font-size:11px;color:#2060b0;margin-top:3px}
+.hwind{font-size:10px;color:#6a8a6a;margin-top:2px}
+.day-sep{display:flex;flex-direction:column;align-items:center;justify-content:center;width:32px;flex-shrink:0}
+.day-sep-inner{writing-mode:vertical-rl;font-size:10px;font-weight:600;color:#1a4a2e;background:#d8f0d0;border-radius:6px;padding:5px 3px;letter-spacing:1px}
+.dr{background:#fff;border-radius:12px;padding:13px 12px;margin-bottom:8px;border:1.5px solid #dde8dd;cursor:pointer}
+.dr.open{border-color:#1a4a2e}
+.dr-row{display:flex;align-items:center;gap:8px}
+.dr-date{font-size:13px;font-weight:600;width:76px;flex-shrink:0}
+.dr-ico{font-size:22px;width:28px;text-align:center;flex-shrink:0}
+.dr-mid{flex:1;min-width:0}
+.dr-desc{font-size:13px}
+.gi-badge{display:inline-block;padding:1px 6px;border-radius:6px;font-weight:600;font-size:11px;margin-top:2px}
+.dr-rain{font-size:13px;color:#2060b0;flex-shrink:0;margin-right:4px}
+.dr-temps{font-size:14px;font-weight:600;flex-shrink:0;text-align:right;line-height:1.5}
+.dr-lo{font-size:13px;color:#7a9a7a;font-weight:400}
+.dd{margin-top:10px;background:#f5f9f5;border-radius:10px;padding:10px;display:none;grid-template-columns:1fr 1fr;gap:8px}
+.dd.show{display:grid}
+.ddi-l{font-size:11px;color:#6a8a6a}
+.ddi-v{font-size:14px;font-weight:600;margin-top:2px}
+.chart-card{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;overflow:hidden}
+.chart-t{font-size:13px;font-weight:600;color:#3a5a3a;margin-bottom:10px}
+.bar-wrap{display:flex;align-items:flex-end;gap:5px;height:130px;padding-bottom:22px;width:max-content}
+.bw{display:flex;flex-direction:column;align-items:center;width:34px;flex-shrink:0}
+.bv{font-size:9px;font-weight:600;margin-bottom:2px}
+.bar{border-radius:3px 3px 0 0;width:28px;min-height:3px}
+.bl{font-size:9px;color:#5a7a5a;margin-top:3px;transform:rotate(-30deg);transform-origin:top center;white-space:nowrap}
+</style>
+</head>
+<body>
+<div id="hdr"><span style="font-size:20px">⛳</span><h1>골프 날씨</h1><small style="opacity:.7;font-size:11px">16일 예보</small></div>
+<div id="srch">
+  <div id="srow">
+    <input id="inp" type="search" placeholder="골프장 검색 (예: 세이지, 파인, 베어)" autocomplete="off" autocorrect="off" spellcheck="false">
+    <button id="goBtn">검색</button>
+  </div>
+  <div id="slist" style="display: block;"><div class="si" onclick="pickFromDB(24)">
+      <span style="font-weight:500"><span style="color:#1a4a2e;font-weight:700">레이크사이드 CC</span></span>
+      <span class="si-loc">경기 용인</span>
+    </div></div>
+</div>
+<div id="main">
+<div id="curCard">
+  <div class="cloc">📍 레이크사이드 CC · 경기 용인</div>
+  <div class="crow">
+    <div><div class="btemp">11°</div><div class="feel">체감 9° · 이슬비</div></div>
+    <div class="wico">🌦️</div>
+  </div>
+  <div class="meta4">
+    <div class="mi"><div class="mi-v">35%</div><div class="mi-l">💧강수확률</div></div>
+    <div class="mi"><div class="mi-v">15</div><div class="mi-l">💨풍속km/h</div></div>
+    <div class="mi"><div class="mi-v" style="font-size:12px">→ 서</div><div class="mi-l">🧭풍향</div></div>
+    <div class="mi"><div class="mi-v">1.7</div><div class="mi-l">☀️UV</div></div>
+  </div>
+  <div style="margin-top:10px;font-size:11px;opacity:.55;text-align:right">14:38 기준 갱신</div>
+</div>
+<div id="gibox" style="background:#faf0c0;color:#3a3000">
+  <div class="gi-n">46</div>
+  <div><div class="gi-h">골프 지수 — 보통 😐</div>
+  <div class="gi-s">강수 35% · 풍속 15km/h · 11°C</div></div>
+</div>
+<div id="tabs">
+  <div class="tb on" onclick="setTab(&#39;hourly&#39;)">⏱ 시간대별</div>
+  <div class="tb" onclick="setTab(&#39;daily&#39;)">📅 16일 예보</div>
+  <div class="tb" onclick="setTab(&#39;chart&#39;)">📊 그래프</div>
+</div><div class="sec">시간대별 · 최대 72시간</div><div id="hscroll"><div id="hrow"><div class="day-sep"><div class="day-sep-inner">오늘</div></div><div class="hc now">
+        <div class="ht">15시</div>
+        <div class="hico">🌦️</div>
+        <div class="htemp">11°</div>
+        <div class="hrain">💧35%</div>
+        <div class="hwind">💨15</div>
+      </div><div class="hc">
+        <div class="ht">16시</div>
+        <div class="hico">🌦️</div>
+        <div class="htemp">10°</div>
+        <div class="hrain">💧30%</div>
+        <div class="hwind">💨15</div>
+      </div><div class="hc">
+        <div class="ht">17시</div>
+        <div class="hico">☀️</div>
+        <div class="htemp">10°</div>
+        <div class="hrain">💧10%</div>
+        <div class="hwind">💨17</div>
+      </div><div class="hc">
+        <div class="ht">18시</div>
+        <div class="hico">☀️</div>
+        <div class="htemp">10°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨17</div>
+      </div><div class="hc">
+        <div class="ht">19시</div>
+        <div class="hico">☀️</div>
+        <div class="htemp">8°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨13</div>
+      </div><div class="hc">
+        <div class="ht">20시</div>
+        <div class="hico">☀️</div>
+        <div class="htemp">7°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨12</div>
+      </div><div class="hc">
+        <div class="ht">21시</div>
+        <div class="hico">☀️</div>
+        <div class="htemp">6°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨10</div>
+      </div><div class="hc">
+        <div class="ht">22시</div>
+        <div class="hico">☀️</div>
+        <div class="htemp">5°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨8</div>
+      </div><div class="hc">
+        <div class="ht">23시</div>
+        <div class="hico">☀️</div>
+        <div class="htemp">4°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨8</div>
+      </div><div class="day-sep"><div class="day-sep-inner">4/21(화)</div></div><div class="hc">
+        <div class="ht">자정</div>
+        <div class="hico">☀️</div>
+        <div class="htemp">3°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨8</div>
+      </div><div class="hc">
+        <div class="ht">1시</div>
+        <div class="hico">☀️</div>
+        <div class="htemp">3°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨8</div>
+      </div><div class="hc">
+        <div class="ht">2시</div>
+        <div class="hico">☀️</div>
+        <div class="htemp">3°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨8</div>
+      </div><div class="hc">
+        <div class="ht">3시</div>
+        <div class="hico">☀️</div>
+        <div class="htemp">3°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨8</div>
+      </div><div class="hc">
+        <div class="ht">4시</div>
+        <div class="hico">☀️</div>
+        <div class="htemp">2°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨9</div>
+      </div><div class="hc">
+        <div class="ht">5시</div>
+        <div class="hico">☀️</div>
+        <div class="htemp">2°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨9</div>
+      </div><div class="hc">
+        <div class="ht">6시</div>
+        <div class="hico">☀️</div>
+        <div class="htemp">1°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨8</div>
+      </div><div class="hc">
+        <div class="ht">7시</div>
+        <div class="hico">🌤️</div>
+        <div class="htemp">3°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨7</div>
+      </div><div class="hc">
+        <div class="ht">8시</div>
+        <div class="hico">☀️</div>
+        <div class="htemp">6°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨7</div>
+      </div><div class="hc">
+        <div class="ht">9시</div>
+        <div class="hico">☀️</div>
+        <div class="htemp">9°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨9</div>
+      </div><div class="hc">
+        <div class="ht">10시</div>
+        <div class="hico">☁️</div>
+        <div class="htemp">11°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨11</div>
+      </div><div class="hc">
+        <div class="ht">11시</div>
+        <div class="hico">☁️</div>
+        <div class="htemp">13°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨13</div>
+      </div><div class="hc">
+        <div class="ht">12시</div>
+        <div class="hico">☁️</div>
+        <div class="htemp">14°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨15</div>
+      </div><div class="hc">
+        <div class="ht">13시</div>
+        <div class="hico">☁️</div>
+        <div class="htemp">14°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨15</div>
+      </div><div class="hc">
+        <div class="ht">14시</div>
+        <div class="hico">⛅</div>
+        <div class="htemp">16°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨16</div>
+      </div><div class="hc">
+        <div class="ht">15시</div>
+        <div class="hico">⛅</div>
+        <div class="htemp">16°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨17</div>
+      </div><div class="hc">
+        <div class="ht">16시</div>
+        <div class="hico">⛅</div>
+        <div class="htemp">15°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨18</div>
+      </div><div class="hc">
+        <div class="ht">17시</div>
+        <div class="hico">🌤️</div>
+        <div class="htemp">14°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨17</div>
+      </div><div class="hc">
+        <div class="ht">18시</div>
+        <div class="hico">🌤️</div>
+        <div class="htemp">13°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨15</div>
+      </div><div class="hc">
+        <div class="ht">19시</div>
+        <div class="hico">🌤️</div>
+        <div class="htemp">11°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨12</div>
+      </div><div class="hc">
+        <div class="ht">20시</div>
+        <div class="hico">🌤️</div>
+        <div class="htemp">10°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨9</div>
+      </div><div class="hc">
+        <div class="ht">21시</div>
+        <div class="hico">🌤️</div>
+        <div class="htemp">8°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨7</div>
+      </div><div class="hc">
+        <div class="ht">22시</div>
+        <div class="hico">⛅</div>
+        <div class="htemp">8°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨8</div>
+      </div><div class="hc">
+        <div class="ht">23시</div>
+        <div class="hico">🌤️</div>
+        <div class="htemp">7°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨7</div>
+      </div><div class="day-sep"><div class="day-sep-inner">4/22(수)</div></div><div class="hc">
+        <div class="ht">자정</div>
+        <div class="hico">🌤️</div>
+        <div class="htemp">7°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨7</div>
+      </div><div class="hc">
+        <div class="ht">1시</div>
+        <div class="hico">🌤️</div>
+        <div class="htemp">6°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨7</div>
+      </div><div class="hc">
+        <div class="ht">2시</div>
+        <div class="hico">⛅</div>
+        <div class="htemp">6°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨7</div>
+      </div><div class="hc">
+        <div class="ht">3시</div>
+        <div class="hico">🌤️</div>
+        <div class="htemp">6°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨7</div>
+      </div><div class="hc">
+        <div class="ht">4시</div>
+        <div class="hico">🌤️</div>
+        <div class="htemp">5°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨7</div>
+      </div><div class="hc">
+        <div class="ht">5시</div>
+        <div class="hico">⛅</div>
+        <div class="htemp">5°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨7</div>
+      </div><div class="hc">
+        <div class="ht">6시</div>
+        <div class="hico">⛅</div>
+        <div class="htemp">5°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨6</div>
+      </div><div class="hc">
+        <div class="ht">7시</div>
+        <div class="hico">☁️</div>
+        <div class="htemp">6°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨6</div>
+      </div><div class="hc">
+        <div class="ht">8시</div>
+        <div class="hico">☁️</div>
+        <div class="htemp">7°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨4</div>
+      </div><div class="hc">
+        <div class="ht">9시</div>
+        <div class="hico">☁️</div>
+        <div class="htemp">9°</div>
+        <div class="hrain">💧0%</div>
+        <div class="hwind">💨2</div>
+      </div><div class="hc">
+        <div class="ht">10시</div>
+        <div class="hico">⛅</div>
+        <div class="htemp">11°</div>
+        <div class="hrain">💧1%</div>
+        <div class="hwind">💨4</div>
+      </div><div class="hc">
+        <div class="ht">11시</div>
+        <div class="hico">⛅</div>
+        <div class="htemp">12°</div>
+        <div class="hrain">💧2%</div>
+        <div class="hwind">💨2</div>
+      </div><div class="hc">
+        <div class="ht">12시</div>
+        <div class="hico">☁️</div>
+        <div class="htemp">13°</div>
+        <div class="hrain">💧3%</div>
+        <div class="hwind">💨3</div>
+      </div><div class="hc">
+        <div class="ht">13시</div>
+        <div class="hico">⛅</div>
+        <div class="htemp">14°</div>
+        <div class="hrain">💧5%</div>
+        <div class="hwind">💨7</div>
+      </div><div class="hc">
+        <div class="ht">14시</div>
+        <div class="hico">⛅</div>
+        <div class="htemp">14°</div>
+        <div class="hrain">💧8%</div>
+        <div class="hwind">💨8</div>
+      </div><div class="hc">
+        <div class="ht">15시</div>
+        <div class="hico">⛅</div>
+        <div class="htemp">15°</div>
+        <div class="hrain">💧10%</div>
+        <div class="hwind">💨6</div>
+      </div><div class="hc">
+        <div class="ht">16시</div>
+        <div class="hico">🌤️</div>
+        <div class="htemp">16°</div>
+        <div class="hrain">💧10%</div>
+        <div class="hwind">💨5</div>
+      </div><div class="hc">
+        <div class="ht">17시</div>
+        <div class="hico">☁️</div>
+        <div class="htemp">16°</div>
+        <div class="hrain">💧9%</div>
+        <div class="hwind">💨9</div>
+      </div><div class="hc">
+        <div class="ht">18시</div>
+        <div class="hico">☁️</div>
+        <div class="htemp">15°</div>
+        <div class="hrain">💧8%</div>
+        <div class="hwind">💨6</div>
+      </div><div class="hc">
+        <div class="ht">19시</div>
+        <div class="hico">☁️</div>
+        <div class="htemp">12°</div>
+        <div class="hrain">💧7%</div>
+        <div class="hwind">💨6</div>
+      </div><div class="hc">
+        <div class="ht">20시</div>
+        <div class="hico">⛅</div>
+        <div class="htemp">11°</div>
+        <div class="hrain">💧6%</div>
+        <div class="hwind">💨8</div>
+      </div><div class="hc">
+        <div class="ht">21시</div>
+        <div class="hico">⛅</div>
+        <div class="htemp">10°</div>
+        <div class="hrain">💧5%</div>
+        <div class="hwind">💨9</div>
+      </div><div class="hc">
+        <div class="ht">22시</div>
+        <div class="hico">☁️</div>
+        <div class="htemp">10°</div>
+        <div class="hrain">💧4%</div>
+        <div class="hwind">💨9</div>
+      </div><div class="hc">
+        <div class="ht">23시</div>
+        <div class="hico">☁️</div>
+        <div class="htemp">9°</div>
+        <div class="hrain">💧3%</div>
+        <div class="hwind">💨9</div>
+      </div><div class="day-sep"><div class="day-sep-inner">4/23(목)</div></div><div class="hc">
+        <div class="ht">자정</div>
+        <div class="hico">⛅</div>
+        <div class="htemp">8°</div>
+        <div class="hrain">💧3%</div>
+        <div class="hwind">💨10</div>
+      </div><div class="hc">
+        <div class="ht">1시</div>
+        <div class="hico">☁️</div>
+        <div class="htemp">8°</div>
+        <div class="hrain">💧3%</div>
+        <div class="hwind">💨9</div>
+      </div><div class="hc">
+        <div class="ht">2시</div>
+        <div class="hico">🌤️</div>
+        <div class="htemp">8°</div>
+        <div class="hrain">💧3%</div>
+        <div class="hwind">💨7</div>
+      </div><div class="hc">
+        <div class="ht">3시</div>
+        <div class="hico">🌤️</div>
+        <div class="htemp">8°</div>
+        <div class="hrain">💧3%</div>
+        <div class="hwind">💨9</div>
+      </div><div class="hc">
+        <div class="ht">4시</div>
+        <div class="hico">⛅</div>
+        <div class="htemp">7°</div>
+        <div class="hrain">💧3%</div>
+        <div class="hwind">💨10</div>
+      </div><div class="hc">
+        <div class="ht">5시</div>
+        <div class="hico">⛅</div>
+        <div class="htemp">7°</div>
+        <div class="hrain">💧3%</div>
+        <div class="hwind">💨9</div>
+      </div><div class="hc">
+        <div class="ht">6시</div>
+        <div class="hico">⛅</div>
+        <div class="htemp">7°</div>
+        <div class="hrain">💧3%</div>
+        <div class="hwind">💨8</div>
+      </div><div class="hc">
+        <div class="ht">7시</div>
+        <div class="hico">⛅</div>
+        <div class="htemp">8°</div>
+        <div class="hrain">💧3%</div>
+        <div class="hwind">💨7</div>
+      </div><div class="hc">
+        <div class="ht">8시</div>
+        <div class="hico">☁️</div>
+        <div class="htemp">10°</div>
+        <div class="hrain">💧3%</div>
+        <div class="hwind">💨10</div>
+      </div><div class="hc">
+        <div class="ht">9시</div>
+        <div class="hico">🌤️</div>
+        <div class="htemp">13°</div>
+        <div class="hrain">💧3%</div>
+        <div class="hwind">💨13</div>
+      </div><div class="hc">
+        <div class="ht">10시</div>
+        <div class="hico">⛅</div>
+        <div class="htemp">14°</div>
+        <div class="hrain">💧3%</div>
+        <div class="hwind">💨14</div>
+      </div><div class="hc">
+        <div class="ht">11시</div>
+        <div class="hico">🌤️</div>
+        <div class="htemp">16°</div>
+        <div class="hrain">💧4%</div>
+        <div class="hwind">💨13</div>
+      </div><div class="hc">
+        <div class="ht">12시</div>
+        <div class="hico">⛅</div>
+        <div class="htemp">17°</div>
+        <div class="hrain">💧4%</div>
+        <div class="hwind">💨12</div>
+      </div><div class="hc">
+        <div class="ht">13시</div>
+        <div class="hico">⛅</div>
+        <div class="htemp">19°</div>
+        <div class="hrain">💧5%</div>
+        <div class="hwind">💨11</div>
+      </div><div class="hc">
+        <div class="ht">14시</div>
+        <div class="hico">⛅</div>
+        <div class="htemp">20°</div>
+        <div class="hrain">💧5%</div>
+        <div class="hwind">💨11</div>
+      </div></div></div></div>
+<script>
+// ── 전국 골프장 DB ──────────────────────────────────────
+const DB=[
+["가든 CC","경기 여주",37.312,127.588],
+["가야 CC","경남 김해",35.234,128.889],
+["가평 베네스트 GC","경기 가평",37.789,127.490],
+["강남 CC","경기 용인",37.201,127.198],
+["강촌 CC","강원 춘천",37.745,127.702],
+["강화 CC","인천 강화",37.712,126.412],
+["거제 CC","경남 거제",34.881,128.623],
+["경기 CC","경기 용인",37.278,127.112],
+["경주 CC","경북 경주",35.854,129.245],
+["고양 CC","경기 고양",37.712,126.851],
+["곤지암 CC","경기 광주",37.401,127.411],
+["광주 CC","경기 광주",37.429,127.266],
+["기흥 CC","경기 용인",37.254,127.115],
+["김해 CC","경남 김해",35.289,128.812],
+["남서울 CC","경기 용인",37.264,127.089],
+["남양주 CC","경기 남양주",37.651,127.321],
+["남해 CC","경남 남해",34.842,127.892],
+["내장산 CC","전북 정읍",35.481,126.891],
+["뉴코리아 CC","경기 가평",37.801,127.512],
+["대구 CC","대구",35.941,128.612],
+["대전 CC","대전",36.312,127.412],
+["덕평 CC","경기 이천",37.289,127.378],
+["동부산 CC","부산",35.189,129.212],
+["라온 프라이빗 타운","제주",33.489,126.410],
+["레이크사이드 CC","경기 용인",37.235,127.179],
+["레이크우드 CC","경기 화성",37.201,126.978],
+["롯데 스카이힐","경남 거제",34.921,128.712],
+["무주 덕유산 리조트","전북 무주",35.908,127.713],
+["베어크리크 CC","경기 용인",37.189,127.121],
+["베어즈베스트 청라","인천 청라",37.534,126.634],
+["보광 파인리조트","경기 가평",37.763,127.398],
+["블루원 상주","경북 상주",36.427,128.132],
+["블루원 용인","경기 용인",37.198,127.201],
+["서울 CC","경기 용인",37.301,127.098],
+["설악 CC","강원 속초",38.152,128.524],
+["세이지우드 CC","강원 홍천",37.713,128.058],
+["소노펠리체 CC","강원 홍천",37.713,128.058],
+["스카이72 GC","인천 영종",37.489,126.489],
+["아난티 CC","경기 가평",37.834,127.523],
+["아시아나 CC","충남 예산",36.680,126.845],
+["안양 CC","경기 안양",37.382,126.961],
+["에이원 CC","경기 광주",37.365,127.278],
+["엘리시안 제주 CC","제주",33.451,126.321],
+["여주 CC","경기 여주",37.298,127.598],
+["오크밸리 CC","강원 원주",37.295,128.152],
+["용평 GC","강원 평창",37.678,128.712],
+["울산 CC","울산",35.578,129.312],
+["이스트밸리 CC","경기 이천",37.198,127.432],
+["일동 레이크 GC","경기 포천",37.867,127.234],
+["제주 CC","제주",33.378,126.523],
+["제주 핀크스 GC","제주 서귀포",33.301,126.372],
+["제주 해비치 CC","제주 서귀포",33.289,126.789],
+["천안 CC","충남 천안",36.812,127.134],
+["청주 CC","충북 청주",36.678,127.489],
+["클럽나인브릿지","제주 서귀포",33.296,126.512],
+["태광 CC","경기 파주",37.782,126.835],
+["파인비치 GC","경남 거제",34.912,128.689],
+["파인크리크 CC","경기 가평",37.806,127.510],
+["파주 CC","경기 파주",37.789,126.823],
+["포천 CC","경기 포천",37.878,127.212],
+["하이원 CC","강원 정선",37.212,128.978],
+["한국 CC","경기 용인",37.289,127.189],
+["해슬리나인브릿지","경기 여주",37.281,127.639],
+["해운대 CC","부산",35.178,129.189],
+["화성 CC","경기 화성",37.176,126.898],
+["휘닉스 파크 GC","강원 평창",37.558,128.487],
+["힐데스하임 CC","충남 아산",36.789,127.023],
+["가일 CC","경기 가평",37.812,127.467],
+["강릉 CC","강원 강릉",37.741,128.891],
+["거창 CC","경남 거창",35.689,127.912],
+["골드 CC","경기 안성",37.012,127.278],
+["광양 CC","전남 광양",34.934,127.689],
+["국민 CC","경기 포천",37.912,127.156],
+["군산 CC","전북 군산",35.978,126.712],
+["금강 CC","충남 공주",36.456,127.123],
+["기장 CC","부산 기장",35.245,129.234],
+["김포 CC","경기 김포",37.623,126.712],
+["나주 CC","전남 나주",35.012,126.723],
+["남악 CC","전남 무안",34.878,126.489],
+["논산 CC","충남 논산",36.189,127.089],
+["단양 CC","충북 단양",37.012,128.367],
+["담양 CC","전남 담양",35.312,126.989],
+["대부도 CC","경기 안산",37.278,126.523],
+["대신 CC","경기 안성",37.045,127.312],
+["대왕 CC","경기 성남",37.423,127.156],
+["덕산 CC","충남 예산",36.712,126.678],
+["동국 CC","경기 포천",37.923,127.167],
+["동래 CC","부산",35.234,129.056],
+["동문 CC","제주",33.523,126.834],
+["마에스트로 CC","경기 여주",37.312,127.567],
+["마이다스 CC","강원 홍천",37.623,127.923],
+["명지 CC","경남 창원",35.189,128.612],
+["목포 CC","전남 목포",34.812,126.423],
+["무안 CC","전남 무안",34.934,126.512],
+["밀양 CC","경남 밀양",35.489,128.745],
+["보성 CC","전남 보성",34.789,127.078],
+["봉황 CC","경기 여주",37.278,127.534],
+["부산 아시아드 CC","부산",35.206,129.054],
+["부여 CC","충남 부여",36.278,126.923],
+["비젠 CC","충북 충주",36.978,127.812],
+["사천 CC","경남 사천",34.934,128.145],
+["삼성 래미안 CC","경기 용인",37.210,127.234],
+["서산 CC","충남 서산",36.789,126.423],
+["서원밸리 CC","경기 가평",37.812,127.423],
+["선운산 CC","전북 고창",35.489,126.589],
+["성남 CC","경기 성남",37.423,127.134],
+["순천 CC","전남 순천",34.934,127.501],
+["신원 CC","경기 가평",37.823,127.534],
+["아일랜드 CC","인천 영종",37.501,126.501],
+["안동 CC","경북 안동",36.534,128.723],
+["양산 CC","경남 양산",35.312,129.034],
+["여수 CC","전남 여수",34.745,127.712],
+["연천 CC","경기 연천",38.012,127.045],
+["영광 CC","전남 영광",35.234,126.501],
+["영종 CC","인천 영종",37.512,126.523],
+["영주 CC","경북 영주",36.823,128.634],
+["오크힐스 CC","전남 해남",34.512,126.589],
+["온양 CC","충남 아산",36.812,127.056],
+["완주 CC","전북 완주",35.912,127.123],
+["원주 CC","강원 원주",37.345,127.956],
+["의왕 CC","경기 의왕",37.334,126.967],
+["이천 CC","경기 이천",37.278,127.434],
+["인천 CC","인천",37.478,126.623],
+["일산 CC","경기 고양",37.689,126.812],
+["임실 CC","전북 임실",35.612,127.289],
+["장성 CC","전남 장성",35.312,126.789],
+["장흥 CC","전남 장흥",34.689,126.912],
+["전주 CC","전북 전주",35.812,127.089],
+["정읍 CC","전북 정읍",35.578,126.867],
+["제천 CC","충북 제천",37.134,128.234],
+["진도 CC","전남 진도",34.478,126.267],
+["진주 CC","경남 진주",35.156,128.056],
+["창원 CC","경남 창원",35.267,128.523],
+["천마산 CC","경기 남양주",37.634,127.323],
+["철원 CC","강원 철원",38.089,127.312],
+["청도 CC","경북 청도",35.645,128.723],
+["청양 CC","충남 청양",36.456,126.812],
+["춘천 CC","강원 춘천",37.823,127.712],
+["충주 CC","충북 충주",36.989,127.934],
+["칠곡 CC","경북 칠곡",35.934,128.456],
+["통영 CC","경남 통영",34.845,128.412],
+["평창 CC","강원 평창",37.534,128.512],
+["포스코 CC","경북 포항",36.034,129.378],
+["포항 CC","경북 포항",36.012,129.345],
+["풀무원 CC","충북 음성",36.934,127.612],
+["하동 CC","경남 하동",35.067,127.756],
+["함안 CC","경남 함안",35.267,128.367],
+["함평 CC","전남 함평",35.067,126.512],
+["해남 CC","전남 해남",34.567,126.601],
+["홍성 CC","충남 홍성",36.612,126.645],
+["횡성 CC","강원 횡성",37.489,127.978],
+["가온 CC","충북 충주",36.887,127.934],
+["강동 CC","경기 하남",37.552,127.261],
+["강변 CC","경기 양평",37.512,127.489],
+["경남 CC","경남 창원",35.231,128.571],
+["레이크힐스 CC","경기 용인",37.212,127.156],
+["베이사이드 CC","경기 화성",37.156,126.834],
+["블루헤런 CC","경기 양주",37.858,127.078],
+["서울 힐스 CC","경기 남양주",37.712,127.298],
+["스프링 CC","경기 이천",37.245,127.456],
+["아너스 CC","경기 용인",37.223,127.167],
+["아트밸리 CC","경기 포천",37.901,127.178],
+["양지 파인 CC","경기 용인",37.178,127.212],
+["에코 CC","경기 양평",37.489,127.512],
+["엘리트 CC","경기 안성",37.023,127.301],
+["오산 CC","경기 오산",37.145,127.078],
+["웨스트힐스 CC","경기 화성",37.156,126.923],
+["유성 CC","대전 유성",36.367,127.312],
+["이글 CC","경기 이천",37.212,127.489],
+["자연 CC","경기 가평",37.834,127.489],
+["제이드 팰리스 CC","강원 홍천",37.689,127.967],
+["천지인 CC","경기 양평",37.523,127.567],
+["클럽 W CC","경기 양주",37.867,127.045],
+["파미힐스 CC","충남 금산",36.089,127.523],
+["팜스프링 CC","경기 여주",37.301,127.545],
+["한양 CC","경기 고양",37.712,126.912],
+["한화 CC","충남 태안",36.745,126.312],
+["해슬리 CC","경기 여주",37.289,127.623],
+["현대 CC","경기 용인",37.234,127.156],
+["화순 CC","전남 화순",35.056,126.978],
+["효성 CC","경기 가평",37.801,127.478]
+];
+
+// ── 상수 ───────────────────────────────────────────────
+const WMO={0:"맑음",1:"대체로 맑음",2:"구름 조금",3:"흐림",45:"안개",48:"안개",51:"가벼운 이슬비",53:"이슬비",55:"강한 이슬비",61:"약한 비",63:"비",65:"강한 비",71:"약한 눈",73:"눈",75:"강한 눈",80:"소나기",81:"강한 소나기",82:"폭우",95:"뇌우",99:"강한 우박"};
+const WIC={0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",53:"🌦️",55:"🌧️",61:"🌧️",63:"🌧️",65:"🌧️",71:"❄️",73:"❄️",75:"❄️",80:"🌦️",81:"🌧️",82:"⛈️",95:"⛈️",99:"⛈️"};
+const DAYS=["일","월","화","수","목","금","토"];
+let W=null,COURSE=null,TAB="hourly",OPEN=-1;
+
+// ── 유틸 ───────────────────────────────────────────────
+function gi(r,w,t){
+  let s=100;
+  s-=Math.min(50,r*1.2);
+  if(w>10)s-=Math.min(30,(w-10)*2.5);
+  if(t<5)s-=Math.min(20,(5-t)*3);
+  if(t>34)s-=Math.min(15,(t-34)*3);
+  s=Math.max(0,Math.round(s));
+  if(s>=80)return{s,l:"최적 ⛳",bg:"#c8f0d0",fg:"#0a3a18"};
+  if(s>=60)return{s,l:"양호 👍",bg:"#d8f0c8",fg:"#1a3a0a"};
+  if(s>=40)return{s,l:"보통 😐",bg:"#faf0c0",fg:"#3a3000"};
+  return{s,l:"주의 ⚠️",bg:"#fde0d0",fg:"#3a1000"};
+}
+function wd(d){
+  const a=["↓","↙","←","↖","↑","↗","→","↘"];
+  const n=["북","북동","동","남동","남","남서","서","북서"];
+  const i=Math.round(d/45)%8;
+  return a[i]+" "+n[i];
+}
+function dl(t,i){
+  if(i===0)return"오늘";if(i===1)return"내일";
+  const d=new Date(t+"T12:00:00");
+  return`${d.getMonth()+1}/${d.getDate()}(${DAYS[d.getDay()]})`;
+}
+function setMain(html){document.getElementById("main").innerHTML=html;}
+function setSlist(html,show){
+  const el=document.getElementById("slist");
+  el.innerHTML=html;el.style.display=show?"block":"none";
+}
+
+// ── 검색 (내장 DB 퍼지 검색) ──────────────────────────
+const inp=document.getElementById("inp");
+const goBtn=document.getElementById("goBtn");
+goBtn.onclick=doSearch;
+inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();doSearch();}});
+// 한글 조합 중 여부 체크
+let composing=false;
+inp.addEventListener("compositionstart",()=>{composing=true;});
+inp.addEventListener("compositionend",()=>{
+  composing=false;
+  const q=inp.value.trim();
+  if(q.length>=1) showSuggestions(q);
+  else setSlist("",false);
+});
+inp.addEventListener("input",()=>{
+  if(composing) return;
+  const q=inp.value.trim();
+  if(q.length>=1) showSuggestions(q);
+  else setSlist("",false);
+});
+inp.addEventListener("keyup",()=>{
+  const q=inp.value.trim();
+  if(q.length>=1) showSuggestions(q);
+  else setSlist("",false);
+});
+
+function showSuggestions(q){
+  const results=DB.filter(c=>c[0].includes(q)||c[1].includes(q)).slice(0,10);
+  if(!results.length){setSlist("",false);return;}
+  setSlist(results.map((c,i)=>
+    `<div class="si" onclick="pickFromDB(${DB.indexOf(c)})">
+      <span style="font-weight:500">${highlight(c[0],q)}</span>
+      <span class="si-loc">${c[1]}</span>
+    </div>`
+  ).join(""),true);
+}
+
+function highlight(name,q){
+  return name.replace(new RegExp(`(${q})`,"g"),'<span style="color:#1a4a2e;font-weight:700">$1</span>');
+}
+
+function doSearch(){
+  const q=inp.value.trim();
+  if(!q)return;
+  showSuggestions(q);
+}
+
+document.addEventListener("click",e=>{
+  if(!e.target.closest("#srch"))setSlist("",false);
+});
+
+function pickFromDB(i){
+  const c=DB[i];
+  COURSE={name:c[0],address:c[1],lat:c[2],lon:c[3]};
+  inp.value=c[0];
+  setSlist("",false);
+  loadWeather();
+}
+
+// ── 날씨 조회 ──────────────────────────────────────────
+async function loadWeather(){
+  setMain(`<div class="loader"><span class="spin">🌀</span><p style="font-size:15px;font-weight:500">${COURSE.name}</p><p style="font-size:13px;color:#7a9a7a;margin-top:4px">날씨 불러오는 중...</p></div>`);
+  TAB="hourly";OPEN=-1;
+  try{
+    const url=`https://api.open-meteo.com/v1/forecast?`+
+      `latitude=${COURSE.lat}&longitude=${COURSE.lon}`+
+      `&hourly=temperature_2m,apparent_temperature,precipitation_probability,weathercode,windspeed_10m,winddirection_10m,uv_index`+
+      `&daily=weathercode,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,`+
+      `precipitation_sum,precipitation_probability_max,windspeed_10m_max,winddirection_10m_dominant,sunrise,sunset,uv_index_max`+
+      `&timezone=Asia%2FSeoul&forecast_days=16&wind_speed_unit=kmh`;
+    const r=await fetch(url);
+    if(!r.ok)throw new Error("날씨 서버 오류 ("+r.status+")");
+    W=await r.json();
+    if(!W.hourly||!W.daily||!Array.isArray(W.hourly.time))throw new Error("데이터 형식 오류");
+    render();
+  }catch(e){
+    setMain(`<div style="padding:4px"><div class="errmsg">
+      ⚠️ 날씨를 불러오지 못했습니다.<br>
+      <small style="opacity:.8">${e.message}</small><br><br>
+      인터넷 연결을 확인하고<br>
+      <button onclick="loadWeather()" style="background:#1a4a2e;color:#fff;border:none;padding:9px 20px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-top:4px">다시 시도</button>
+    </div></div>`);
+  }
+}
+
+// ── 렌더링 ─────────────────────────────────────────────
+function render(){
+  if(!W)return;
+  const hi=W.hourly,da=W.daily;
+  const now=new Date();
+  let h0=hi.time.findIndex(t=>new Date(t)>=now);
+  if(h0<0)h0=0;
+  const cur={
+    temp:Math.round(hi.temperature_2m[h0]),
+    feel:Math.round(hi.apparent_temperature[h0]),
+    rain:hi.precipitation_probability?.[h0]??0,
+    wind:Math.round(hi.windspeed_10m?.[h0]??0),
+    wdir:hi.winddirection_10m?.[h0]??0,
+    wc:hi.weathercode?.[h0]??0,
+    uv:hi.uv_index?.[h0]
+  };
+  const g=gi(cur.rain,cur.wind,cur.temp);
+  const now2=new Date();
+  const updated=`${now2.getHours()}:${String(now2.getMinutes()).padStart(2,"0")} 기준`;
+
+  let html=`
+<div id="curCard">
+  <div class="cloc">📍 ${COURSE.name} · ${COURSE.address}</div>
+  <div class="crow">
+    <div><div class="btemp">${cur.temp}°</div><div class="feel">체감 ${cur.feel}° · ${WMO[cur.wc]||""}</div></div>
+    <div class="wico">${WIC[cur.wc]||"🌡️"}</div>
+  </div>
+  <div class="meta4">
+    <div class="mi"><div class="mi-v">${cur.rain}%</div><div class="mi-l">💧강수확률</div></div>
+    <div class="mi"><div class="mi-v">${cur.wind}</div><div class="mi-l">💨풍속km/h</div></div>
+    <div class="mi"><div class="mi-v" style="font-size:12px">${wd(cur.wdir)}</div><div class="mi-l">🧭풍향</div></div>
+    <div class="mi"><div class="mi-v">${cur.uv!=null?cur.uv.toFixed(1):"-"}</div><div class="mi-l">☀️UV</div></div>
+  </div>
+  <div style="margin-top:10px;font-size:11px;opacity:.55;text-align:right">${updated} 갱신</div>
+</div>
+<div id="gibox" style="background:${g.bg};color:${g.fg}">
+  <div class="gi-n">${g.s}</div>
+  <div><div class="gi-h">골프 지수 — ${g.l}</div>
+  <div class="gi-s">강수 ${cur.rain}% · 풍속 ${cur.wind}km/h · ${cur.temp}°C</div></div>
+</div>
+<div id="tabs">
+  <div class="tb${TAB==="hourly"?" on":""}" onclick="setTab('hourly')">⏱ 시간대별</div>
+  <div class="tb${TAB==="daily"?" on":""}" onclick="setTab('daily')">📅 16일 예보</div>
+  <div class="tb${TAB==="chart"?" on":""}" onclick="setTab('chart')">📊 그래프</div>
+</div>`;
+
+  // 시간대별 72시간
+  if(TAB==="hourly"){
+    const totalH=Math.min(h0+72,hi.time.length);
+    let lastDate="";
+    html+=`<div class="sec">시간대별 · 최대 72시간</div><div id="hscroll"><div id="hrow">`;
+    for(let i=h0;i<totalH;i++){
+      const t=new Date(hi.time[i]),hr=t.getHours();
+      const ds=`${t.getMonth()+1}/${t.getDate()}`;
+      if(ds!==lastDate){
+        const lbl=i===h0?"오늘":`${ds}(${DAYS[t.getDay()]})`;
+        html+=`<div class="day-sep"><div class="day-sep-inner">${lbl}</div></div>`;
+        lastDate=ds;
+      }
+      html+=`<div class="hc${i===h0?" now":""}">
+        <div class="ht">${hr===0?"자정":hr+"시"}</div>
+        <div class="hico">${WIC[hi.weathercode?.[i]]||"🌡️"}</div>
+        <div class="htemp">${Math.round(hi.temperature_2m[i])}°</div>
+        <div class="hrain">💧${hi.precipitation_probability?.[i]??0}%</div>
+        <div class="hwind">💨${Math.round(hi.windspeed_10m?.[i]??0)}</div>
+      </div>`;
+    }
+    html+=`</div></div>`;
+  }
+
+  // 16일 예보
+  if(TAB==="daily"){
+    html+=`<div class="sec">16일 예보 (클릭 시 상세)</div>`;
+    da.time.forEach((t,i)=>{
+      const dt=new Date(t+"T12:00:00");
+      const dc=dt.getDay()===0?"#c02020":dt.getDay()===6?"#2060c0":"#1a2e1a";
+      const g2=gi(da.precipitation_probability_max?.[i]??0,da.windspeed_10m_max?.[i]??0,da.temperature_2m_max?.[i]??20);
+      const isOpen=OPEN===i;
+      html+=`<div class="dr${isOpen?" open":""}" onclick="toggleDay(${i})">
+        <div class="dr-row">
+          <div class="dr-date" style="color:${dc}">${dl(t,i)}</div>
+          <div class="dr-ico">${WIC[da.weathercode?.[i]]||"🌡️"}</div>
+          <div class="dr-mid">
+            <div class="dr-desc">${WMO[da.weathercode?.[i]]||""}</div>
+            <span class="gi-badge" style="background:${g2.bg};color:${g2.fg}">${g2.s}점 ${g2.l}</span>
+          </div>
+          <div class="dr-rain">💧${da.precipitation_probability_max?.[i]??0}%</div>
+          <div class="dr-temps">${Math.round(da.temperature_2m_max?.[i]??0)}°<br><span class="dr-lo">${Math.round(da.temperature_2m_min?.[i]??0)}°</span></div>
+        </div>
+        <div class="dd${isOpen?" show":""}">
+          <div><div class="ddi-l">체감 최고/최저</div><div class="ddi-v">${Math.round(da.apparent_temperature_max?.[i]??0)}° / ${Math.round(da.apparent_temperature_min?.[i]??0)}°</div></div>
+          <div><div class="ddi-l">강수량</div><div class="ddi-v">${(da.precipitation_sum?.[i]??0).toFixed(1)} mm</div></div>
+          <div><div class="ddi-l">최대 풍속</div><div class="ddi-v">${Math.round(da.windspeed_10m_max?.[i]??0)} km/h</div></div>
+          <div><div class="ddi-l">풍향</div><div class="ddi-v">${wd(da.winddirection_10m_dominant?.[i]??0)}</div></div>
+          <div><div class="ddi-l">UV 지수</div><div class="ddi-v">${da.uv_index_max?.[i]?.toFixed(1)||"-"}</div></div>
+          <div><div class="ddi-l">일출 / 일몰</div><div class="ddi-v">${(da.sunrise?.[i]||"").split("T")[1]||"-"} / ${(da.sunset?.[i]||"").split("T")[1]||"-"}</div></div>
+        </div>
+      </div>`;
+    });
+  }
+
+  // 그래프
+  if(TAB==="chart"){
+    const labs=da.time.map((t,i)=>{
+      if(i===0)return"오늘";if(i===1)return"내일";
+      const d=new Date(t+"T12:00:00");return`${d.getMonth()+1}/${d.getDate()}`;
+    });
+    const bw=34,gap=5,pw=da.time.length*(bw+gap)+8;
+    const maxT=Math.max(...da.temperature_2m_max),minT=Math.min(...da.temperature_2m_min),tR=maxT-minT||1;
+    const svgH=110,pad=16;
+    const tx=i=>i*(bw+gap)+bw/2+4;
+    const ty=v=>svgH-pad-((v-minT)/tR)*(svgH-pad*2);
+    const maxPts=da.temperature_2m_max.map((v,i)=>`${tx(i)},${ty(v)}`).join(" ");
+    const minPts=da.temperature_2m_min.map((v,i)=>`${tx(i)},${ty(v)}`).join(" ");
+    const maxW=Math.max(...da.windspeed_10m_max)||1;
+
+    html+=`<div class="chart-card"><div class="chart-t">💧 강수 확률 (%)</div>
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+    <div class="bar-wrap" style="width:${pw}px">`;
+    da.precipitation_probability_max.forEach((v,i)=>{
+      html+=`<div class="bw"><div class="bv" style="color:#2060b0">${v??0}%</div><div class="bar" style="height:${Math.max(3,v??0)}px;background:#3080d0"></div><div class="bl">${labs[i]}</div></div>`;
+    });
+    html+=`</div></div></div>`;
+
+    html+=`<div class="chart-card"><div class="chart-t">🌡️ 기온 (°C)</div>
+    <div style="display:flex;gap:12px;font-size:12px;margin-bottom:8px;color:#5a7a5a">
+      <span><span style="color:#c03020">●</span> 최고</span><span><span style="color:#2060c0">●</span> 최저</span>
+    </div>
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+    <svg width="${pw}" height="${svgH}" viewBox="0 0 ${pw} ${svgH}" style="overflow:visible;display:block">
+      <polyline points="${maxPts}" fill="none" stroke="#c03020" stroke-width="2" stroke-linejoin="round"/>
+      <polyline points="${minPts}" fill="none" stroke="#2060c0" stroke-width="2" stroke-linejoin="round"/>
+      ${da.temperature_2m_max.map((v,i)=>`<circle cx="${tx(i)}" cy="${ty(v)}" r="3" fill="#c03020"/><text x="${tx(i)}" y="${ty(v)-6}" text-anchor="middle" font-size="9" fill="#c03020">${Math.round(v)}°</text>`).join("")}
+      ${da.temperature_2m_min.map((v,i)=>`<circle cx="${tx(i)}" cy="${ty(v)}" r="3" fill="#2060c0"/><text x="${tx(i)}" y="${ty(v)+13}" text-anchor="middle" font-size="9" fill="#2060c0">${Math.round(v)}°</text>`).join("")}
+    </svg>
+    <div style="display:flex;gap:${gap}px;width:${pw}px;padding-top:4px">
+      ${labs.map(l=>`<div style="width:${bw}px;flex-shrink:0;text-align:center;font-size:9px;color:#5a7a5a">${l}</div>`).join("")}
+    </div></div></div>`;
+
+    html+=`<div class="chart-card"><div class="chart-t">💨 최대 풍속 (km/h)</div>
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+    <div class="bar-wrap" style="width:${pw}px">`;
+    da.windspeed_10m_max.forEach((v,i)=>{
+      html+=`<div class="bw"><div class="bv" style="color:#1a7a4a">${Math.round(v??0)}</div><div class="bar" style="height:${Math.max(3,Math.round((v??0)/maxW*100))}px;background:#1a7a4a"></div><div class="bl">${labs[i]}</div></div>`;
+    });
+    html+=`</div></div></div>`;
+  }
+
+  setMain(html);
+}
+
+function setTab(t){TAB=t;render();}
+function toggleDay(i){OPEN=OPEN===i?-1:i;render();}
+</script>
+
+
+</body></html>
