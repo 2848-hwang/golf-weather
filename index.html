@@ -155,7 +155,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#eef3ee;
 .bar-wrap{display:flex;align-items:flex-end;gap:5px;height:130px;padding-bottom:22px;width:max-content}
 .bw{display:flex;flex-direction:column;align-items:center;width:34px;flex-shrink:0}
 .bv{font-size:9px;font-weight:600;margin-bottom:2px}
-.bar{border-radius:3px 3px 0 0;width:28px;min-height:3px}
+.bar{border-radius:3px 3px 0 0;width:13px;min-height:3px}
+.bar-wrap>.bw>div>.bar:only-child{width:28px}
 .bl{font-size:9px;color:#5a7a5a;margin-top:3px;transform:rotate(-30deg);transform-origin:top center;white-space:nowrap}
 </style>
 </head>
@@ -824,6 +825,61 @@ function airGradeOf(isoDate){
   ["pm10","pm25","o3","week"].forEach(f=>{if(d[f])c.push(d[f]);});
   if(!c.length)return null;
   return c.reduce((a,b)=>(AIR_RANK[b]??0)>(AIR_RANK[a]??0)?b:a);
+}
+
+// 등급을 막대 높이로 바꾼다. 미세먼지·오존은 수치가 아니라 등급으로 발표된다.
+const AIR_LV={"좋음":1,"낮음":1,"보통":2,"나쁨":3,"높음":3,"매우나쁨":4};
+const AIR_H={1:28,2:56,3:84,4:106};
+function airBar(g,label){
+  if(!g)return `<div class="bar" style="height:3px;background:#dde8dd"></div>`;
+  const lv=AIR_LV[g]||1, c=AIR_COLOR[g]||["#eef3ee","#3a5a3a"];
+  return `<div class="bar" title="${label} ${g}" style="height:${AIR_H[lv]}px;background:${c[1]};opacity:.85"></div>`;
+}
+// 일별 미세먼지 그래프 + 오존 그래프
+function airCharts(rows,labs,pw){
+  if(!KMA_KEY||!AIR||AIR.error||!AIR.days)return "";
+  const day=D=>AIR.days[typeof D.t==="string"?D.t:""]||null;
+  const has=rows.some(D=>{const d=day(D);return d&&(d.pm10||d.pm25||d.o3||d.week);});
+  if(!has)return "";
+  let out="";
+
+  // 미세먼지 (미세 PM10 / 초미세 PM2.5, 그 뒤 구간은 농도 전망)
+  out+=`<div class="chart-card"><div class="chart-t">😷 일별 미세먼지</div>
+  <div style="display:flex;gap:12px;font-size:11.5px;margin-bottom:8px;color:#5a7a5a;flex-wrap:wrap">
+    <span>왼쪽 <b>미세</b> · 오른쪽 <b>초미세</b></span>
+    <span style="opacity:.8">막대가 높을수록 나쁨 · 예보 없는 날은 농도 전망(낮음/보통/높음)</span>
+  </div>
+  <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+  <div class="bar-wrap" style="width:${pw}px">`;
+  rows.forEach((D,i)=>{
+    const d=day(D)||{};
+    const a=d.pm10, b=d.pm25, w=(!a&&!b)?d.week:null;
+    const cap=w?w:[a,b].filter(Boolean).map(g=>g[0]).join("/");
+    out+=`<div class="bw"><div class="bv" style="color:#5a7a5a;font-size:8.5px">${cap||"–"}</div>
+      <div style="display:flex;align-items:flex-end;gap:2px">
+        ${w?airBar(w,"농도 전망"):`${airBar(a,"미세")}${airBar(b,"초미세")}`}
+      </div>
+      <div class="bl">${labs[i]}</div></div>`;
+  });
+  out+=`</div></div></div>`;
+
+  // 오존
+  const hasO3=rows.some(D=>{const d=day(D);return d&&d.o3;});
+  out+=`<div class="chart-card"><div class="chart-t">🫧 일별 오존</div>
+  <div style="font-size:11.5px;margin-bottom:8px;color:#5a7a5a">
+    ${hasO3?`막대가 높을수록 나쁨 · 여름철 야외 운동에는 미세먼지보다 영향이 클 수 있습니다`
+           :`오존 예보는 오늘~모레만 제공됩니다`}
+  </div>
+  <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+  <div class="bar-wrap" style="width:${pw}px">`;
+  rows.forEach((D,i)=>{
+    const d=day(D)||{};
+    out+=`<div class="bw"><div class="bv" style="color:#5a7a5a;font-size:8.5px">${d.o3||"–"}</div>
+      <div style="display:flex;align-items:flex-end">${airBar(d.o3,"오존")}</div>
+      <div class="bl">${labs[i]}</div></div>`;
+  });
+  out+=`</div></div></div>`;
+  return out;
 }
 
 function airDayLine(isoDate){
@@ -1803,7 +1859,6 @@ function render(){
     const ty=v=>svgH-pad-((v-minT)/tR)*(svgH-pad*2);
     const maxPts=DSHOW.map((d,i)=>d.tmax!=null?`${tx(i)},${ty(d.tmax)}`:null).filter(Boolean).join(" ");
     const minPts=DSHOW.map((d,i)=>d.tmin!=null?`${tx(i)},${ty(d.tmin)}`:null).filter(Boolean).join(" ");
-    const maxW=Math.max(...DSHOW.map(d=>d.wind))||1;
 
     // 기상청 일별 값 (없는 날은 null)
     const kmx=DSHOW.map(D=>{const k=kmaDay(D.t);return k&&k.tmx!=null?k.tmx:null;});
@@ -1849,15 +1904,7 @@ function render(){
       ${labs.map(l=>`<div style="width:${bw}px;flex-shrink:0;text-align:center;font-size:9px;color:#5a7a5a">${l}</div>`).join("")}
     </div></div></div>`;
 
-    html+=`<div class="chart-card"><div class="chart-t">🌬️ 일별 최대 풍속 (km/h)</div>
-    <div style="font-size:11.5px;margin-bottom:8px;color:#5a7a5a">
-      <span style="color:#1a7a4a">■</span> 예보 모델 기준(기상청 미제공)</span></div>
-    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
-    <div class="bar-wrap" style="width:${pw}px">`;
-    DSHOW.forEach((D,i)=>{ const v=D.wind;
-      html+=`<div class="bw"><div class="bv" style="color:#1a7a4a">${Math.round(v??0)}</div><div class="bar" style="height:${Math.max(3,Math.round((v??0)/maxW*100))}px;background:#1a7a4a"></div><div class="bl">${labs[i]}</div></div>`;
-    });
-    html+=`</div></div></div>`;
+    html+=airCharts(DSHOW,labs,pw);
   }
 
   setMain(html);
