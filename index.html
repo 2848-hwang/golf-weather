@@ -103,9 +103,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#eef3ee;
 .mi-v{font-size:15px;font-weight:600}
 .mi-l{font-size:10px;opacity:.8;margin-top:2px}
 #gibox{border-radius:14px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
-#airbox{background:#fff;border:1.5px solid #dde8dd;border-radius:14px;padding:11px 14px;margin:-4px 0 12px;
-        font-size:12.5px;color:#3a5a3a;line-height:1.75}
-#airbox .ab-t{font-weight:700;color:#1a4a2e}
 .ab-g{display:inline-block;padding:1px 7px;border-radius:6px;font-weight:700;font-size:11.5px}
 .dr-air{font-size:11px;color:#4a6a4a;margin-top:4px;padding-top:4px;border-top:1px dashed #e2ece4}
 .gi-n{font-size:42px;font-weight:700;line-height:1;min-width:56px}
@@ -118,7 +115,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#eef3ee;
 .sec{font-size:12px;font-weight:600;color:#5a7a5a;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px}
 .hscroll{overflow-x:auto;margin-bottom:12px;-webkit-overflow-scrolling:touch}
 .hrow{display:flex;gap:6px;width:max-content;padding-bottom:4px}
-.hc{background:#fff;border:1.5px solid #dde8dd;border-radius:12px;padding:10px 8px;text-align:center;width:66px;flex-shrink:0}
+.hc{background:#fff;border:1.5px solid #dde8dd;border-radius:12px;padding:10px 6px;text-align:center;width:74px;flex-shrink:0}
+.hair{font-size:9.5px;margin-top:3px;padding-top:3px;border-top:1px dashed #e6efe6;line-height:1.35}
+.hair i{font-style:normal;color:#8aa88a;font-size:8.5px;display:block}
 .hc.now{border-color:#1a4a2e;background:#f0f8f2}
 .ht{font-size:11px;color:#6a8a6a;margin-bottom:4px}
 .hico{font-size:20px;margin-bottom:2px}
@@ -138,6 +137,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#eef3ee;
 .dr-rain{font-size:13px;color:#2060b0;flex-shrink:0;margin-right:4px}
 .dr-temps{font-size:14px;font-weight:600;flex-shrink:0;text-align:right;line-height:1.45;min-width:66px}
 .dr-lbl{font-size:9.5px;font-weight:600;color:#8aa88a;letter-spacing:-.3px;margin-right:2px}
+.dr-src{font-size:8.5px;font-weight:600;color:#9ab09a;letter-spacing:-.3px;margin-bottom:1px}
 .legend{font-size:11px;color:#6a8a6a;line-height:1.7;background:#f4f8f4;border:1px solid #e2ece4;
         border-radius:9px;padding:8px 10px;margin:-2px 0 10px}
 .legend b{color:#3a5a3a}
@@ -393,7 +393,7 @@ const DB=[
 ["세레니티 CC","충북 청주",36.54733,127.38797,146,"11C10301","부강면"],
 ["세븐밸리 CC","경북 칠곡",36.01568,128.46245,139,"11H10705","칠곡군"],
 ["세이지우드 CC 홍천","강원 홍천",37.88322,128.11729,699,"11D10201","인제읍"],
-["세인트포 CC","제주 제주",33.51972,126.73744,100,"11G00202","조천읍"],
+["세인트포 CC","제주 제주",33.51972,126.73744,100,"11G00901","조천읍"],
 ["세일 CC","충북 충주",37.02715,127.67442,303,"11C10103","금왕"],
 ["세종레이캐슬 CC","세종",36.61798,127.19113,232,"11C20404","전의면"],
 ["세종에머슨 컨트리클럽","세종",36.69872,127.17676,154,"11C20301","전의면"],
@@ -452,7 +452,7 @@ const DB=[
 ["안성 CC","경기 안성",37.03655,127.40567,191,"11B20611","죽산면"],
 ["안성베네스트 골프클럽","경기 안성",37.01941,127.38493,248,"11B20611","죽산면"],
 ["안양 컨트리클럽","경기 군포",37.33764,126.94176,64,"11B20609","당동"],
-["알펜시아 트룬 CC","강원 평창",37.65311,128.65798,785,"11D20202","옥천동"],
+["알펜시아 트룬 CC","강원 평창",37.65311,128.65798,785,"11D20201","옥천동"],
 ["알펜시아700GC","강원 평창",37.66285,128.68835,757,"11D20201","옥천동"],
 ["알프스대영 CC","강원 횡성",37.46360,128.07144,243,"11D10402","우천면"],
 ["애플밸리 컨트리클럽","경북 김천",36.22412,128.05965,235,"11H10601","대광동"],
@@ -470,7 +470,7 @@ const DB=[
 ["에스페란사 골프클럽","전북 김제",35.80507,127.00683,32,"11F10201","혁신동"],
 ["에이원 CC","경남 양산",35.37664,129.17487,222,"11H20102","삼호동"],
 ["에이치원클럽","경기 이천",37.18467,127.40059,149,"11B20701","백암면"],
-["에코랜드 CC","제주 제주",33.45873,126.67144,377,"11G00202","조천읍"],
+["에코랜드 CC","제주 제주",33.45873,126.67144,377,"11G00901","조천읍"],
 ["에콜리안 CC 거창","경남 거창",35.69357,128.05409,421,"11H20502","거창읍"],
 ["에콜리안 정선 CC","강원 정선",37.22303,128.68360,531,"11D10502","정선읍"],
 ["에콜리안광산 CC","광주 광산구",35.10866,126.74298,40,"11F20503","평동"],
@@ -479,12 +479,12 @@ const DB=[
 ["엘리시안제주 CC","제주 제주",33.37189,126.37834,514,"11G00201","한림읍"],
 ["엘리체 컨트리클럽","전남 화순",34.95435,126.92277,147,"11F20505","화순읍"],
 ["엠스클럽의성 컨트리클럽","경북 의성",36.28227,128.55669,137,"11H10707","군위읍"],
-["여수경도골프앤리조트 CC","전남 여수",34.71530,127.72498,33,"11F20406","여수항","세이지우드 여수경도 경도"],
+["여수경도골프앤리조트 CC","전남 여수",34.71530,127.72498,33,"11F20401","여수항","세이지우드 여수경도 경도"],
 ["여수시티파크리조트","전남 여수",34.77607,127.68777,170,"11F20401","문수동"],
 ["여주썬밸리 CC","경기 여주",37.26976,127.73452,188,"11B20703","문막읍"],
 ["영남알프스 CC","울산 울주",35.54114,129.09701,199,"11H20101","삼남읍"],
 ["오너스 GC","강원 춘천",37.77043,127.65803,219,"11D10301","퇴계동"],
-["오동도코스","전남 여수",34.71389,127.72117,8,"11F20406","여수항"],
+["오동도코스","전남 여수",34.71389,127.72117,8,"11F20401","여수항"],
 ["오라 CC","제주 제주",33.44592,126.51039,303,"11G00201","연동"],
 ["오렌지듄스 GC","인천 연수구",37.35177,126.58856,7,"11B20201","인천 신항"],
 ["오렌지듄스영종 GC","인천 영종구",37.43565,126.45789,5,"11B20201","운서"],
@@ -580,7 +580,7 @@ const DB=[
 ["코리아 CC 퍼블릭코스","경기 용인",37.22360,127.12479,133,"11B20612","청계동"],
 ["코브스윙","경기 포천",37.86396,127.13397,274,"11B20403","선단동"],
 ["코스카 CC","충북 음성",36.93068,127.62374,249,"11C10103","음성읍"],
-["크라운 CC","제주 제주",33.53047,126.69548,52,"11G00202","조천읍"],
+["크라운 CC","제주 제주",33.53047,126.69548,52,"11G00901","조천읍"],
 ["클럽디거창 CC","경남 거창",35.59304,127.90480,554,"11H20502","남상면"],
 ["클럽디보은 CC","충북 보은",36.50979,127.69168,249,"11C10302","보은읍"],
 ["클럽디속리산","충북 보은",36.44647,127.78300,250,"11C10302","보은읍"],
@@ -592,7 +592,7 @@ const DB=[
 ["타이거 CC","경기 파주",37.92433,126.89212,119,"11B20305","파주읍"],
 ["탑스텐리조트 동강시스타 CC","강원 영월",37.21472,128.51143,258,"11D10501","영월읍"],
 ["태광 CC","경기 용인",37.28333,127.08676,118,"11B20601","광교동"],
-["태기산 CC","강원 평창",37.58519,128.31871,687,"11D10504","평창읍"],
+["태기산 CC","강원 평창",37.58519,128.31871,687,"11D10503","평창읍"],
 ["태인 컨트리클럽","전북 정읍",35.67994,126.96462,47,"11F10203","신태인"],
 ["테디밸리 골프&리조트","제주 서귀포",33.29010,126.34353,222,"11G00501","대정읍"],
 ["통도 파인이스트 컨트리클럽","경남 양산",35.48874,129.09724,164,"11H20102","삼남읍"],
@@ -649,7 +649,7 @@ const DB=[
 ["화성 골프클럽","경기 화성",37.22709,126.83448,51,"11B20604","남양읍"],
 ["화성상록 GC","경기 화성",37.19333,127.13349,156,"11B20603","청계동"],
 ["화순 CC","전남 화순",34.97410,126.91066,120,"11F20505","빛가람동"],
-["휘닉스평창 CC","강원 평창",37.58750,128.33755,689,"11D10504","평창읍"],
+["휘닉스평창 CC","강원 평창",37.58750,128.33755,689,"11D10503","평창읍"],
 ["휘슬링락 CC","강원 춘천",37.76649,127.67445,216,"11D10301","퇴계동"],
 ["히든밸리 골프클럽","충북 진천",36.90661,127.30875,281,"11C10102","성거읍"],
 ["힐드로사이 CC","강원 홍천",37.59340,127.71142,284,"11D10302","용문면"]
@@ -800,6 +800,30 @@ function segPolyline(arr,tx,ty,color){
 }
 
 // 일별 예보 줄에 붙는 미세먼지 등급
+// 시간대별 칸 아래에 붙는 미세/오존 (예보가 일 단위이므로 그 날 등급)
+function airCell(isoTime){
+  if(!KMA_KEY||!AIR||AIR.error||!AIR.days)return "";
+  const d=AIR.days[(isoTime||"").slice(0,10)];
+  if(!d)return "";
+  const dust=d.pm25||d.pm10||d.week||null;
+  if(!dust&&!d.o3)return "";
+  return `<div class="hair">
+    ${dust?`<i>미세</i>${airChip(dust)}`:""}
+    ${d.o3?`<i style="margin-top:2px">오존</i>${airChip(d.o3)}`:""}
+  </div>`;
+}
+
+// 그 날의 미세먼지·오존 중 가장 나쁜 등급 (일별 골프지수 감점용)
+function airGradeOf(isoDate){
+  if(!AIR||AIR.error||!AIR.days)return null;
+  const d=AIR.days[isoDate];
+  if(!d)return null;
+  const c=[];
+  ["pm10","pm25","o3","week"].forEach(f=>{if(d[f])c.push(d[f]);});
+  if(!c.length)return null;
+  return c.reduce((a,b)=>(AIR_RANK[b]??0)>(AIR_RANK[a]??0)?b:a);
+}
+
 function airDayLine(isoDate){
   if(!KMA_KEY||!AIR||AIR.error||!AIR.days)return "";
   const d=AIR.days[isoDate];
@@ -807,22 +831,32 @@ function airDayLine(isoDate){
   const p=[];
   if(d.pm10)p.push(`미세 ${airChip(d.pm10)}`);
   if(d.pm25)p.push(`초미세 ${airChip(d.pm25)}`);
-  if(d.o3)p.push(`오존 ${airChip(d.o3)}`);
   if(!p.length&&d.week)p.push(`미세먼지 농도 ${airChip(d.week)}`);
-  if(!p.length)return "";
-  return `<div class="dr-air">😷 ${p.join(" · ")}</div>`;
+  let out="";
+  if(p.length)out+=`<div class="dr-air">😷 ${p.join(" · ")}</div>`;
+  if(d.o3)out+=`<div class="dr-air">오존 ${airChip(d.o3)}</div>`;   // 항상 맨 아래
+  return out;
 }
 
-function kmaDayLine(isoDate,da,i){
+function kmaDayLine(isoDate,da,i,D){
   if(!KMA_KEY||!KMA||KMA.error)return "";
   const k=kmaDay(isoDate);
   if(!k||(k.tmx==null&&k.tmn==null))return "";
+  // 중기 구간은 위 예상값이 이미 이 기상청 값에서 나왔으므로 차이 대신 보정량을 보여준다
+  if(D&&D.useMid){
+    const a=D.adj;
+    return `<div class="dr-kma">🏛️ 기상청 <span class="dr-lbl" style="color:#7a8aaa">중기·발표값</span>
+      <span class="dr-lbl">최고</span><b>${Math.round(k.tmx)}°</b>
+      <span class="dr-lbl">최저</span><b>${k.tmn!=null?Math.round(k.tmn)+"°":"–"}</b>
+      · 💧${k.pop??"–"}% · ${midIcon(k.wf)} ${k.wf||""}
+      <span style="opacity:.8">→ 코스 해발 ${COURSE.ele}m 보정 ${a>=0?"+":""}${a.toFixed(1)}°</span></div>`;
+  }
   const om_x=da.temperature_2m_max?.[i], om_n=da.temperature_2m_min?.[i];
   const d=(a,b)=>(a==null||b==null)?"":` <span style="opacity:.75">(${(a-b)>0?"+":""}${Math.round((a-b)*10)/10})</span>`;
   // 기상청이 최고/최저를 직접 발표하지 않은 날은 * 로 구분
   const mk=v=>v?`<span title="기상청 시간별 값에서 산출한 값" style="opacity:.65">*</span>`:"";
-  const src=k.mid?`<span class="dr-lbl" style="color:#7a8aaa">중기</span>`
-                 :`<span class="dr-lbl" style="color:#7a8aaa">단기</span>`;
+  const src=k.mid?`<span class="dr-lbl" style="color:#7a8aaa">중기·고도미적용</span>`
+                 :`<span class="dr-lbl" style="color:#7a8aaa">단기·고도미적용</span>`;
   return `<div class="dr-kma">🏛️ 기상청 ${src}·
     <span class="dr-lbl">최고</span><b>${k.tmx!=null?Math.round(k.tmx)+"°":"–"}</b>${mk(k.tmxD)}${d(k.tmx,om_x)}
     <span class="dr-lbl">최저</span><b>${k.tmn!=null?Math.round(k.tmn)+"°":"–"}</b>${mk(k.tmnD)}${d(k.tmn,om_n)}
@@ -859,7 +893,8 @@ function kmaHourlyStrip(hi,h0,totalH){
       <div class="hico">${kmaIcon(k.sky,k.pty)}</div>
       <div class="htemp">${k.tmp!=null?Math.round(k.tmp)+"°":"–"}</div>
       <div class="hrain">💧${k.pop??0}%</div>
-      <div class="hwind">💨${k.wsd!=null?Math.round(k.wsd*3.6):"–"}</div>
+      <div class="hwind">🌬️${k.wsd!=null?Math.round(k.wsd*3.6):"–"}</div>
+      ${airCell(hi.time[i])}
     </div>`;
   }
   if(!n)return "";
@@ -925,36 +960,6 @@ function golfLoader(){
       </g></g></g></g>
     </g>
   </svg>`;
-}
-// 골프 지수 아래에 붙는 미세먼지 줄
-function airBox(){
-  if(!KMA_KEY)return "";
-  if(AIR&&AIR.error)return `<div id="airbox">😷 미세먼지를 불러오지 못했습니다 — ${AIR.error}</div>`;
-  if(!AIR)return "";
-  const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-  const t=new Date(), t1=new Date(t.getTime()+864e5), t2=new Date(t.getTime()+1728e5);
-  const d0=AIR.days[iso(t)]||{}, d1=AIR.days[iso(t1)]||{}, d2=AIR.days[iso(t2)]||{};
-  const n=AIR.now;
-  let l1="";
-  if(n){
-    l1=`<span class="ab-t">😷 지금</span> 미세먼지 ${airChip(n.pm10g)} ${n.pm10??"–"}㎍/㎥
-        · 초미세 ${airChip(n.pm25g)} ${n.pm25??"–"}㎍/㎥
-        <span style="opacity:.65">· ${AIR.stn} 측정소 ${n.time||""}</span>`;
-  }else{
-    l1=`<span class="ab-t">😷 미세먼지</span> <span style="opacity:.7">측정소 실측값 없음</span>`;
-  }
-  const fmt=(lbl,d)=>{
-    const parts=[];
-    if(d.pm10)parts.push(`미세 ${airChip(d.pm10)}`);
-    if(d.pm25)parts.push(`초미세 ${airChip(d.pm25)}`);
-    if(d.o3)parts.push(`오존 ${airChip(d.o3)}`);
-    if(!parts.length&&d.week)parts.push(`농도 ${airChip(d.week)}`);
-    return parts.length?`<b>${lbl}</b> ${parts.join(" ")}`:"";
-  };
-  const f=[fmt("오늘",d0),fmt("내일",d1),fmt("모레",d2)].filter(Boolean).join(" &nbsp;|&nbsp; ");
-  return `<div id="airbox">${l1}${f?`<br>${f}`:""}
-    ${AIR.base?`<div style="font-size:11px;opacity:.6;margin-top:3px">예보 ${AIR.base} · ${AIR.reg} 권역 · 에어코리아</div>`:""}
-  </div>`;
 }
 function setMain(html){
   const el=document.getElementById("main");
@@ -1068,6 +1073,7 @@ function searchDB(raw){
       for(const t of toks)if(hay.includes(t))hit++;
       if(hit)sc=42+Math.round(18*hit/toks.length);
     }
+    else if(hay.includes(nq))sc=55;               // 별칭(브랜드명)으로 검색
     else if(nReg.includes(nq))sc=40;              // 지역명으로 검색
     if(sc>=0)out.push([sc,-c[4],i]);              // 동점이면 고지대 우선
   }
@@ -1222,6 +1228,17 @@ async function kmaFetch(op,params){
   if(!it)throw new Error(j?.response?.header?.resultMsg
       ||j?.OpenAPI_ServiceResponse?.cmmMsgHeader?.returnAuthMsg||op+" 응답 없음");
   return Array.isArray(it)?it:[it];
+}
+
+// 중기예보 관측지점의 해발고도 (기상청 예보구역정보 좌표 기준, 121개)
+const MID_ELE={"11B20101":49,"11B20102":41,"11B20201":50,"11B20202":23,"11B20203":11,"11B20204":22,"11B20302":24,"11B20304":56,"11B20305":10,"11B20401":76,"11B20403":99,"11B20404":112,"11B20502":67,"11B20503":46,"11B20504":474,"11B20601":36,"11B20603":25,"11B20604":35,"11B20605":55,"11B20606":19,"11B20609":63,"11B20611":35,"11B20612":97,"11B20701":78,"11B20702":46,"11B20703":50,"11C10101":112,"11C10102":72,"11C10103":156,"11C10201":269,"11C10301":55,"11C10302":184,"11C10304":72,"11C10402":178,"11C20102":38,"11C20103":21,"11C20201":50,"11C20301":52,"11C20302":24,"11C20401":57,"11C20403":176,"11C20404":59,"11C20501":18,"11C20602":13,"11D10101":149,"11D10201":227,"11D10301":102,"11D10302":212,"11D10401":130,"11D10402":131,"11D10501":206,"11D10502":312,"11D10503":298,"11D20201":846,"11D20301":690,"11D20401":14,"11D20402":34,"11D20403":24,"11D20501":46,"11D20602":9,"11F10201":44,"11F10202":24,"11F10203":41,"11F10204":35,"11F10301":423,"11F10302":189,"11F10303":297,"11F10401":107,"11F10402":235,"11F10403":90,"11F20302":25,"11F20303":35,"11F20401":9,"11F20402":23,"11F20404":160,"11F20405":73,"11F20501":44,"11F20502":49,"11F20503":72,"11F20504":52,"11F20505":84,"11F20602":69,"11G00101":10,"11G00201":100,"11G00401":52,"11G00501":56,"11G00901":376,"11G01001":244,"11H10101":14,"11H10102":38,"11H10201":5,"11H10202":43,"11H10301":84,"11H10302":62,"11H10401":211,"11H10501":99,"11H10601":80,"11H10602":58,"11H10604":62,"11H10701":44,"11H10702":118,"11H10703":51,"11H10704":92,"11H10705":35,"11H10707":110,"11H20101":7,"11H20102":6,"11H20301":32,"11H20304":7,"11H20401":35,"11H20402":18,"11H20403":40,"11H20404":14,"11H20405":33,"11H20502":203,"11H20601":26,"11H20602":51,"11H20603":16,"11H20604":66,"11H20701":32,"11H20703":115};
+const LAPSE_PER_M=0.0065;   // 표준 기온감률 0.65°C/100m
+// 기상청 중기예보는 관측지점 고도의 값이다.
+// 코스가 그보다 높으면 그만큼 낮게, 낮으면 높게 보정한다.
+function midTempAdj(){
+  const se=MID_ELE[COURSE.midTa];
+  if(se==null||COURSE.ele==null)return 0;
+  return -(COURSE.ele-se)*LAPSE_PER_M;
 }
 
 // ── 기상청 중기예보 (4~10일) ────────────────────────────
@@ -1640,7 +1657,7 @@ function render(){
   </div>
   <div class="meta4">
     <div class="mi"><div class="mi-v">${cur.rain}%</div><div class="mi-l">💧강수확률</div></div>
-    <div class="mi"><div class="mi-v">${cur.wind}</div><div class="mi-l">💨풍속km/h</div></div>
+    <div class="mi"><div class="mi-v">${cur.wind}</div><div class="mi-l">🌬️풍속km/h</div></div>
     <div class="mi"><div class="mi-v" style="font-size:12px">${wd(cur.wdir)}</div><div class="mi-l">🧭풍향</div></div>
     <div class="mi"><div class="mi-v">${cur.uv!=null?cur.uv.toFixed(1):"-"}</div><div class="mi-l">☀️UV</div></div>
   </div>
@@ -1651,7 +1668,6 @@ function render(){
   <div><div class="gi-h">골프 지수 — ${g.l}</div>
   <div class="gi-s">강수 ${cur.rain}% · 풍속 ${cur.wind}km/h · ${cur.temp}°C${airG?` · 미세먼지 ${airG}`:""}</div></div>
 </div>
-${airBox()}
 <div id="tabs">
   <div class="tb${TAB==="hourly"?" on":""}" onclick="setTab('hourly')">⏱ 시간대별</div>
   <div class="tb${TAB==="daily"?" on":""}" onclick="setTab('daily')">🗓️ 16일 예보</div>
@@ -1663,7 +1679,8 @@ ${airBox()}
     const totalH=Math.min(h0+72,hi.time.length);
     let lastDate="";
     html+=`<div class="sec">예상 날씨 (고도 반영) · 시간대별 최대 72시간</div>
-    <div class="legend">칸마다 위에서부터 &nbsp;<b>시각</b> · <b>날씨</b> · <b>기온</b> · <b>💧강수확률</b> · <b>💨풍속(km/h)</b></div>
+    <div class="legend">칸마다 위에서부터 &nbsp;<b>시각</b> · <b>날씨</b> · <b>기온</b> · <b>💧강수확률</b> · <b>🌬️풍속(km/h)</b> · <b>미세</b> · <b>오존</b>
+    <br><span style="opacity:.8">기온은 코스 해발 ${COURSE.ele}m 를 적용한 값입니다. 미세·오존은 일 단위 예보라 같은 날은 같은 등급으로 표시됩니다.</span></div>
     <div class="hscroll"><div class="hrow">`;
     for(let i=h0;i<totalH;i++){
       const t=new Date(hi.time[i]),hr=t.getHours();
@@ -1678,40 +1695,68 @@ ${airBox()}
         <div class="hico">${WIC[hi.weathercode?.[i]]||"🌡️"}</div>
         <div class="htemp">${Math.round(hi.temperature_2m[i])}°</div>
         <div class="hrain">💧${hi.precipitation_probability?.[i]??0}%</div>
-        <div class="hwind">💨${Math.round(hi.windspeed_10m?.[i]??0)}</div>
+        <div class="hwind">🌬️${Math.round(hi.windspeed_10m?.[i]??0)}</div>
+        ${airCell(hi.time[i])}
       </div>`;
     }
     html+=`</div></div>`;
     html+=kmaHourlyStrip(hi,h0,totalH);
   }
 
+  // ── 일별 표시값 ──
+  // 0~3일  : 예상 날씨(ICON, 코스 고도 반영)
+  // 4~10일 : 기상청 중기예보 + 코스 고도 보정  ← 전지구 모델과 기상청이 크게 갈려 기상청을 기준으로 삼는다
+  // 11일~  : 기상청 중기 범위를 넘어서므로 예상 날씨 유지
+  const MADJ=midTempAdj();
+  const DDAY=da.time.map((t,i)=>{
+    const k=kmaDay(t);
+    const useMid=!!(k&&k.mid&&k.tmx!=null);
+    const om_x=da.temperature_2m_max?.[i], om_n=da.temperature_2m_min?.[i];
+    return {
+      t,i,k,useMid,adj:useMid?MADJ:0,
+      tmax:useMid?k.tmx+MADJ:om_x,
+      tmin:useMid?(k.tmn!=null?k.tmn+MADJ:om_n):om_n,
+      pop:useMid?(k.pop??da.precipitation_probability_max?.[i]??0):(da.precipitation_probability_max?.[i]??0),
+      wind:da.windspeed_10m_max?.[i]??0,
+      icon:useMid?midIcon(k.wf):(WIC[da.weathercode?.[i]]||"🌡️"),
+      desc:useMid?(k.wf||""):(WMO[da.weathercode?.[i]]||""),
+    };
+  });
+
   // 16일 예보
   if(TAB==="daily"){
     html+=`<div class="sec">예상 날씨 (고도 반영) · 일별 예보 (클릭 시 상세)</div>`;
     html+=`<div class="legend">
-      각 줄 왼쪽부터 &nbsp;<b>날짜</b> · <b>날씨</b>와 <b>골프지수</b> · <b>💧강수확률</b> · <b>최고/최저 기온</b>
+      각 줄 왼쪽부터 &nbsp;<b>날짜</b> · <b>날씨</b>와 <b>골프지수</b> · <b>💧강수확률</b> ·
+      <b>최고/최저 기온</b>
+      <br><span style="opacity:.85">기온 출처 — <b>0~3일</b>: 예상 날씨(ICON)에 코스 해발 ${COURSE.ele}m 적용 ·
+      <b>4~10일</b>: <b>기상청 중기예보</b>에 코스 해발 보정 ${MADJ>=0?"+":""}${MADJ.toFixed(1)}° 적용 ·
+      <b>11일~</b>: 예상 날씨(기상청 중기 범위 밖)</span>
       ${KMA_KEY&&KMA&&!KMA.error?`<br>줄 아래 <b>🏛️ 기상청</b> 은 같은 항목의 기상청 발표값입니다. 괄호는 예상 날씨와의 차이.
       <br><b>단기</b>=단기예보(+3일) · <b>중기</b>=중기예보(4~10일)${KMA.mid?` · ${KMA.mid.base}`:""}`:""}
-      ${AIR&&!AIR.error&&AIR.days&&Object.keys(AIR.days).length?`<br>😷 줄은 <b>에어코리아 미세먼지 예보</b>입니다 (오늘~모레는 등급, 이후는 농도 전망).`:""}
+      ${AIR&&!AIR.error&&AIR.days&&Object.keys(AIR.days).length?`<br>😷 줄은 <b>에어코리아 미세먼지 예보</b>, 그 아래 <b>오존</b> 줄입니다 (오늘~모레는 등급, 이후는 농도 전망).`:""}
+      <br><span style="opacity:.85">※ 4일 이후는 전지구 모델과 기상청이 크게 갈리므로 <b>기상청 발표값을 기준</b>으로 삼습니다.</span>
     </div>`;
-    da.time.forEach((t,i)=>{
+    DDAY.forEach((D)=>{
+      const t=D.t,i=D.i;
       const dt=new Date(t+"T12:00:00");
       const dc=dt.getDay()===0?"#c02020":dt.getDay()===6?"#2060c0":"#1a2e1a";
-      const g2=gi(da.precipitation_probability_max?.[i]??0,da.windspeed_10m_max?.[i]??0,da.temperature_2m_max?.[i]??20);
+      const g2=gi(D.pop,D.wind,D.tmax??20,airGradeOf(t));
       const isOpen=OPEN===i;
       html+=`<div class="dr${isOpen?" open":""}" onclick="toggleDay(${i})">
         <div class="dr-row">
           <div class="dr-date" style="color:${dc}">${dl(t,i)}</div>
-          <div class="dr-ico">${WIC[da.weathercode?.[i]]||"🌡️"}</div>
+          <div class="dr-ico">${D.icon}</div>
           <div class="dr-mid">
-            <div class="dr-desc">${WMO[da.weathercode?.[i]]||""}</div>
+            <div class="dr-desc">${D.desc}</div>
             <span class="gi-badge" style="background:${g2.bg};color:${g2.fg}">${g2.s}점 ${g2.l}</span>
           </div>
-          <div class="dr-rain">💧${da.precipitation_probability_max?.[i]??0}%</div>
-          <div class="dr-temps"><span class="dr-lbl">최고</span>${Math.round(da.temperature_2m_max?.[i]??0)}°<br>
-            <span class="dr-lbl">최저</span><span class="dr-lo">${Math.round(da.temperature_2m_min?.[i]??0)}°</span></div>
+          <div class="dr-rain">💧${D.pop}%</div>
+          <div class="dr-temps"><div class="dr-src">${D.useMid?"기상청+고도":"고도적용"}</div>
+            <span class="dr-lbl">최고</span>${D.tmax!=null?Math.round(D.tmax)+"°":"–"}<br>
+            <span class="dr-lbl">최저</span><span class="dr-lo">${D.tmin!=null?Math.round(D.tmin)+"°":"–"}</span></div>
         </div>
-        ${kmaDayLine(t,da,i)}
+        ${kmaDayLine(t,da,i,D)}
         ${airDayLine(t)}
         <div class="dd${isOpen?" show":""}">
           <div><div class="ddi-l">체감 최고/최저</div><div class="ddi-v">${FD[t]?Math.round(FD[t].mx)+"° / "+Math.round(FD[t].mn)+"°":"–"}</div></div>
@@ -1732,14 +1777,14 @@ ${airBox()}
       const d=new Date(t+"T12:00:00");return`${d.getMonth()+1}/${d.getDate()}`;
     });
     const bw=34,gap=5,pw=da.time.length*(bw+gap)+8;
-    const kAll=[].concat(da.temperature_2m_max,da.temperature_2m_min,
+    const kAll=[].concat(DDAY.map(d=>d.tmax),DDAY.map(d=>d.tmin),
       kmxOf(da),kmnOf(da)).filter(v=>v!=null);
     const maxT=Math.max(...kAll),minT=Math.min(...kAll),tR=maxT-minT||1;
     const svgH=110,pad=16;
     const tx=i=>i*(bw+gap)+bw/2+4;
     const ty=v=>svgH-pad-((v-minT)/tR)*(svgH-pad*2);
-    const maxPts=da.temperature_2m_max.map((v,i)=>`${tx(i)},${ty(v)}`).join(" ");
-    const minPts=da.temperature_2m_min.map((v,i)=>`${tx(i)},${ty(v)}`).join(" ");
+    const maxPts=DDAY.map((d,i)=>d.tmax!=null?`${tx(i)},${ty(d.tmax)}`:null).filter(Boolean).join(" ");
+    const minPts=DDAY.map((d,i)=>d.tmin!=null?`${tx(i)},${ty(d.tmin)}`:null).filter(Boolean).join(" ");
     const maxW=Math.max(...da.windspeed_10m_max)||1;
 
     // 기상청 일별 값 (없는 날은 null)
@@ -1754,8 +1799,8 @@ ${airBox()}
     </div>
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
     <div class="bar-wrap" style="width:${pw}px">`;
-    da.precipitation_probability_max.forEach((v,i)=>{
-      const kv=kpop[i];
+    DDAY.forEach((D,i)=>{
+      const v=D.pop, kv=kpop[i];
       html+=`<div class="bw"><div class="bv" style="color:#2060b0">${v??0}%${kv!=null?`<span style="color:#0a3a6a">/${kv}</span>`:""}</div>
         <div style="display:flex;align-items:flex-end;gap:2px">
           <div class="bar" style="width:${kv!=null?13:28}px;height:${Math.max(3,v??0)}px;background:#3080d0"></div>
@@ -1769,9 +1814,9 @@ ${airBox()}
     <div style="display:flex;gap:12px;font-size:11.5px;margin-bottom:8px;color:#5a7a5a;flex-wrap:wrap">
       <span><span style="color:#c03020">●</span> 최고(예상)</span>
       <span><span style="color:#2060c0">●</span> 최저(예상)</span>
-      ${hasK?`<span><span style="color:#c03020">┈</span> 최고(기상청)</span>
-      <span><span style="color:#2060c0">┈</span> 최저(기상청)</span>
-      <span style="opacity:.7">기상청은 10일까지</span>`:""}
+      ${hasK?`<span><span style="color:#c03020">┈</span> 최고(기상청 발표값)</span>
+      <span><span style="color:#2060c0">┈</span> 최저(기상청 발표값)</span>
+      <span style="opacity:.7">4~10일 실선은 기상청+고도보정</span>`:""}
     </div>
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
     <svg width="${pw}" height="${svgH}" viewBox="0 0 ${pw} ${svgH}" style="overflow:visible;display:block">
@@ -1779,14 +1824,14 @@ ${airBox()}
       <polyline points="${minPts}" fill="none" stroke="#2060c0" stroke-width="2" stroke-linejoin="round"/>
       ${hasK?segPolyline(kmx,tx,ty,"#c03020"):""}
       ${hasK?segPolyline(kmn,tx,ty,"#2060c0"):""}
-      ${da.temperature_2m_max.map((v,i)=>`<circle cx="${tx(i)}" cy="${ty(v)}" r="3" fill="#c03020"/><text x="${tx(i)}" y="${ty(v)-6}" text-anchor="middle" font-size="9" fill="#c03020">${Math.round(v)}°</text>`).join("")}
-      ${da.temperature_2m_min.map((v,i)=>`<circle cx="${tx(i)}" cy="${ty(v)}" r="3" fill="#2060c0"/><text x="${tx(i)}" y="${ty(v)+13}" text-anchor="middle" font-size="9" fill="#2060c0">${Math.round(v)}°</text>`).join("")}
+      ${DDAY.map((d,i)=>d.tmax==null?"":`<circle cx="${tx(i)}" cy="${ty(d.tmax)}" r="3" fill="#c03020"/><text x="${tx(i)}" y="${ty(d.tmax)-6}" text-anchor="middle" font-size="9" fill="#c03020">${Math.round(d.tmax)}°</text>`).join("")}
+      ${DDAY.map((d,i)=>d.tmin==null?"":`<circle cx="${tx(i)}" cy="${ty(d.tmin)}" r="3" fill="#2060c0"/><text x="${tx(i)}" y="${ty(d.tmin)+13}" text-anchor="middle" font-size="9" fill="#2060c0">${Math.round(d.tmin)}°</text>`).join("")}
     </svg>
     <div style="display:flex;gap:${gap}px;width:${pw}px;padding-top:4px">
       ${labs.map(l=>`<div style="width:${bw}px;flex-shrink:0;text-align:center;font-size:9px;color:#5a7a5a">${l}</div>`).join("")}
     </div></div></div>`;
 
-    html+=`<div class="chart-card"><div class="chart-t">💨 일별 최대 풍속 (km/h)</div>
+    html+=`<div class="chart-card"><div class="chart-t">🌬️ 일별 최대 풍속 (km/h)</div>
     <div style="font-size:11.5px;margin-bottom:8px;color:#5a7a5a">
       <span style="color:#1a7a4a">■</span> 예상 날씨(고도 반영) 기준</span></div>
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
