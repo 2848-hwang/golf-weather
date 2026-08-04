@@ -1,0 +1,17 @@
+{
+  "name": "골프 날씨",
+  "short_name": "골프날씨",
+  "description": "전국 골프장의 예상 날씨(고도 반영)와 기상청 예보를 나란히 비교합니다.",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef3ee",
+  "theme_color": "#1a4a2e",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -1,17 +1,35 @@
 <!DOCTYPE html>
-<!-- saved from url=(0060)file:///C:/Users/blue2/Downloads/golf_weather_app%20(1).html -->
-<html lang="ko"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<html lang="ko"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>골프 날씨</title>
+<meta name="description" content="전국 골프장의 예상 날씨(고도 반영)와 기상청 예보를 나란히 비교합니다.">
+<meta name="theme-color" content="#1a4a2e">
+<!-- 홈 화면 앱(PWA) -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="골프날씨">
-<meta name="theme-color" content="#1a4a2e">
-<title>골프 날씨</title>
+<meta name="application-name" content="골프날씨">
+<!-- 카카오톡 등에서 링크 미리보기 -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="골프 날씨">
+<meta property="og:description" content="골프장 검색 → 예상 날씨와 기상청 예보 비교. 홈 화면에 추가하면 앱처럼 씁니다.">
+<meta property="og:image" content="icon-512.png">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#eef3ee;min-height:100vh;color:#1a2e1a;padding-bottom:40px}
 #hdr{background:#1a4a2e;color:#fff;padding:14px 16px;display:flex;align-items:center;gap:8px}
+#pwaBar{display:none;background:#fffbe8;border-bottom:1px solid #f0dfa8;padding:11px 14px;
+        font-size:13px;line-height:1.6;color:#5a4600}
+#pwaBar b{color:#3a2e00}
+#pwaBar .pw-row{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+#pwaBar button{border:none;border-radius:9px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer}
+#pwaBar .pw-go{background:#1a4a2e;color:#fff}
+#pwaBar .pw-x{background:#ece3c4;color:#5a4600}
 #hdr h1{font-size:17px;font-weight:600;flex:1}
 #srch{background:#fff;padding:12px 14px;border-bottom:1px solid #dde8dd;position:sticky;top:0;z-index:99}
 #srow{display:flex;gap:8px}
@@ -19,19 +37,64 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#eef3ee;
 #inp:focus{border-color:#1a4a2e;background:#fff}
 #goBtn{background:#1a4a2e;color:#fff;border:none;padding:11px 18px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer}
 #slist{margin-top:8px;display:none;background:#fff;border:1px solid #ccdacc;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.12);max-height:300px;overflow-y:auto}
-.si{padding:14px;cursor:pointer;font-size:15px;border-bottom:1px solid #f0f5f0;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.si{padding:14px;cursor:pointer;font-size:18px;border-bottom:1px solid #f0f5f0;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.si-nm{font-size:18px;font-weight:600;line-height:1.3}
 .si:last-child{border-bottom:none}
 .si:active{background:#f0f7f0}
-.si-loc{font-size:12px;color:#6a8a6a;flex-shrink:0}
+.si-loc{font-size:13px;color:#6a8a6a;flex-shrink:0}
 #main{padding:14px;max-width:600px;margin:0 auto}
 .empty{text-align:center;padding:60px 16px;color:#7a9a7a}
-.loader{text-align:center;padding:50px 16px;color:#4a7a4a}
-.spin{display:block;font-size:36px;margin-bottom:12px;animation:sp 1s linear infinite}
-@keyframes sp{to{transform:rotate(360deg)}}
+.loader{text-align:center;padding:34px 16px 30px;border-radius:18px;color:#fff;
+        background:linear-gradient(145deg,#1a4a2e,#2d6b45)}
+.loader .ld-nm{font-size:15px;font-weight:600}
+.loader .ld-sub{font-size:13px;margin-top:4px;opacity:.75}
+.gload{width:132px;height:92px;margin:0 auto 10px;display:block}
+/* 공이 굴러와 홀에 빠진다 (1.9초 반복)
+   SVG 는 transform-box 기본값이 view-box 이므로 transform-origin 을
+   반드시 px 좌표로 명시해야 한다. center 로 두면 뷰박스 중심을 축으로 돌아버린다. */
+.hi-x{animation:hix 1.9s cubic-bezier(.22,.55,.35,1) infinite}
+@keyframes hix{
+  0%{transform:translateX(-14px)}
+  70%{transform:translateX(89px)}
+  100%{transform:translateX(89px)}
+}
+.hi-y{animation:hiy 1.9s ease-in infinite}
+@keyframes hiy{
+  0%,70%{transform:translateY(56px)}
+  73%{transform:translateY(57px)}
+  92%{transform:translateY(72px)}
+  100%{transform:translateY(72px)}
+}
+/* 구르기: 이동거리 103px ÷ 공 둘레 39px ≈ 2.6회전 = 950° */
+.hi-roll{transform-origin:8px 8px;animation:hiroll 1.9s cubic-bezier(.22,.55,.35,1) infinite}
+@keyframes hiroll{0%{transform:rotate(0)}70%,100%{transform:rotate(950deg)}}
+/* 공은 축소하지 않는다. 홀 표면 아래로 잠긴 만큼 clip-path 로 잘려 사라진다. */
+.hi-fade{animation:hifade 1.9s linear infinite}
+@keyframes hifade{0%,93%{opacity:1}95%,100%{opacity:0}}
+.hi-sh{transform-origin:8px 70px;animation:hish 1.9s ease-in infinite}
+@keyframes hish{
+  0%,70%{opacity:.24;transform:scale(1,1)}
+  80%{opacity:.1;transform:scale(.6,.5)}
+  86%{opacity:0}
+  100%{opacity:0}
+}
+/* 깃대: 공이 들어가는 순간 살짝 흔들린다 */
+.hi-flag{transform-origin:97px 70px;animation:hifl 1.9s ease-out infinite}
+@keyframes hifl{
+  0%,74%{transform:rotate(0)}
+  82%{transform:rotate(-8deg)}
+  90%{transform:rotate(4deg)}
+  100%{transform:rotate(0)}
+}
+}
 .errmsg{background:#fff3f0;border:1px solid #fcc;border-radius:12px;padding:16px;color:#c04020;font-size:14px;line-height:1.7}
 #curCard{background:linear-gradient(145deg,#1a4a2e,#2d6b45);color:#fff;border-radius:18px;padding:18px 16px;margin-bottom:12px}
-.cloc{font-size:12px;opacity:.75;margin-bottom:8px}
+.cloc{font-size:13px;opacity:1;margin-bottom:4px;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.cnm{font-size:22px;font-weight:700;line-height:1.2}
+.cloc-r{opacity:.75}
+.cstamp{font-size:12px;font-weight:600;opacity:.9;margin-bottom:10px}
 .crow{display:flex;justify-content:space-between;align-items:flex-start}
+.btlabel{font-size:12px;font-weight:600;opacity:.8;margin-bottom:1px}
 .btemp{font-size:56px;font-weight:200;line-height:1}
 .feel{font-size:13px;opacity:.8;margin-top:4px}
 .wico{font-size:52px;line-height:1}
@@ -48,8 +111,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#eef3ee;
 .tb{background:#fff;border:1.5px solid #d0ddd0;border-radius:10px;padding:9px 16px;font-size:14px;font-weight:500;color:#4a6a4a;cursor:pointer;white-space:nowrap;flex-shrink:0}
 .tb.on{background:#1a4a2e;color:#fff;border-color:#1a4a2e}
 .sec{font-size:12px;font-weight:600;color:#5a7a5a;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px}
-#hscroll{overflow-x:auto;margin-bottom:12px;-webkit-overflow-scrolling:touch}
-#hrow{display:flex;gap:6px;width:max-content;padding-bottom:4px}
+.hscroll{overflow-x:auto;margin-bottom:12px;-webkit-overflow-scrolling:touch}
+.hrow{display:flex;gap:6px;width:max-content;padding-bottom:4px}
 .hc{background:#fff;border:1.5px solid #dde8dd;border-radius:12px;padding:10px 8px;text-align:center;width:66px;flex-shrink:0}
 .hc.now{border-color:#1a4a2e;background:#f0f8f2}
 .ht{font-size:11px;color:#6a8a6a;margin-bottom:4px}
@@ -58,7 +121,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#eef3ee;
 .hrain{font-size:11px;color:#2060b0;margin-top:3px}
 .hwind{font-size:10px;color:#6a8a6a;margin-top:2px}
 .day-sep{display:flex;flex-direction:column;align-items:center;justify-content:center;width:32px;flex-shrink:0}
-.day-sep-inner{writing-mode:vertical-rl;font-size:10px;font-weight:600;color:#1a4a2e;background:#d8f0d0;border-radius:6px;padding:5px 3px;letter-spacing:1px}
+.day-sep-inner{writing-mode:vertical-rl;font-size:10px;font-weight:600;color:#1a4a2e;background:#d8f0d0;border-radius:6px;padding:5px 3px;letter-spacing:.5px;white-space:nowrap}
 .dr{background:#fff;border-radius:12px;padding:13px 12px;margin-bottom:8px;border:1.5px solid #dde8dd;cursor:pointer}
 .dr.open{border-color:#1a4a2e}
 .dr-row{display:flex;align-items:center;gap:8px}
@@ -75,6 +138,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#eef3ee;
 .ddi-l{font-size:11px;color:#6a8a6a}
 .ddi-v{font-size:14px;font-weight:600;margin-top:2px}
 .chart-card{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;overflow:hidden}
+.km-note{font-size:11px;color:#6a8a6a;margin:-4px 0 12px;line-height:1.6}
+.dr-kma{font-size:11px;color:#3a5a3a;margin-top:5px;padding-top:5px;border-top:1px dashed #dde8dd}
+.km-warn{background:#fff8e8;border:1px solid #f0dca0;border-radius:10px;padding:10px 12px;font-size:12px;color:#6a5000;line-height:1.6;margin-bottom:12px}
 .chart-t{font-size:13px;font-weight:600;color:#3a5a3a;margin-bottom:10px}
 .bar-wrap{display:flex;align-items:flex-end;gap:5px;height:130px;padding-bottom:22px;width:max-content}
 .bw{display:flex;flex-direction:column;align-items:center;width:34px;flex-shrink:0}
@@ -84,659 +150,515 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#eef3ee;
 </style>
 </head>
 <body>
-<div id="hdr"><span style="font-size:20px">⛳</span><h1>골프 날씨</h1><small style="opacity:.7;font-size:11px">16일 예보</small></div>
+<div id="hdr"><span style="font-size:20px">⛳</span><h1>골프 날씨</h1></div>
+<div id="pwaBar"></div>
 <div id="srch">
   <div id="srow">
     <input id="inp" type="search" placeholder="골프장 검색 (예: 세이지, 파인, 베어)" autocomplete="off" autocorrect="off" spellcheck="false">
     <button id="goBtn">검색</button>
   </div>
-  <div id="slist" style="display: block;"><div class="si" onclick="pickFromDB(24)">
-      <span style="font-weight:500"><span style="color:#1a4a2e;font-weight:700">레이크사이드 CC</span></span>
-      <span class="si-loc">경기 용인</span>
-    </div></div>
+  <div id="slist"></div>
 </div>
 <div id="main">
-<div id="curCard">
-  <div class="cloc">📍 레이크사이드 CC · 경기 용인</div>
-  <div class="crow">
-    <div><div class="btemp">11°</div><div class="feel">체감 9° · 이슬비</div></div>
-    <div class="wico">🌦️</div>
+  <div class="empty">
+    <div style="font-size:44px;margin-bottom:12px">⛳</div>
+    <p style="font-size:15px;font-weight:500;color:#4a7a4a">골프장을 검색해 주세요</p>
+    <p style="font-size:13px;margin-top:6px">이름 또는 지역으로 찾을 수 있습니다</p>
   </div>
-  <div class="meta4">
-    <div class="mi"><div class="mi-v">35%</div><div class="mi-l">💧강수확률</div></div>
-    <div class="mi"><div class="mi-v">15</div><div class="mi-l">💨풍속km/h</div></div>
-    <div class="mi"><div class="mi-v" style="font-size:12px">→ 서</div><div class="mi-l">🧭풍향</div></div>
-    <div class="mi"><div class="mi-v">1.7</div><div class="mi-l">☀️UV</div></div>
-  </div>
-  <div style="margin-top:10px;font-size:11px;opacity:.55;text-align:right">14:38 기준 갱신</div>
 </div>
-<div id="gibox" style="background:#faf0c0;color:#3a3000">
-  <div class="gi-n">46</div>
-  <div><div class="gi-h">골프 지수 — 보통 😐</div>
-  <div class="gi-s">강수 35% · 풍속 15km/h · 11°C</div></div>
-</div>
-<div id="tabs">
-  <div class="tb on" onclick="setTab(&#39;hourly&#39;)">⏱ 시간대별</div>
-  <div class="tb" onclick="setTab(&#39;daily&#39;)">📅 16일 예보</div>
-  <div class="tb" onclick="setTab(&#39;chart&#39;)">📊 그래프</div>
-</div><div class="sec">시간대별 · 최대 72시간</div><div id="hscroll"><div id="hrow"><div class="day-sep"><div class="day-sep-inner">오늘</div></div><div class="hc now">
-        <div class="ht">15시</div>
-        <div class="hico">🌦️</div>
-        <div class="htemp">11°</div>
-        <div class="hrain">💧35%</div>
-        <div class="hwind">💨15</div>
-      </div><div class="hc">
-        <div class="ht">16시</div>
-        <div class="hico">🌦️</div>
-        <div class="htemp">10°</div>
-        <div class="hrain">💧30%</div>
-        <div class="hwind">💨15</div>
-      </div><div class="hc">
-        <div class="ht">17시</div>
-        <div class="hico">☀️</div>
-        <div class="htemp">10°</div>
-        <div class="hrain">💧10%</div>
-        <div class="hwind">💨17</div>
-      </div><div class="hc">
-        <div class="ht">18시</div>
-        <div class="hico">☀️</div>
-        <div class="htemp">10°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨17</div>
-      </div><div class="hc">
-        <div class="ht">19시</div>
-        <div class="hico">☀️</div>
-        <div class="htemp">8°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨13</div>
-      </div><div class="hc">
-        <div class="ht">20시</div>
-        <div class="hico">☀️</div>
-        <div class="htemp">7°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨12</div>
-      </div><div class="hc">
-        <div class="ht">21시</div>
-        <div class="hico">☀️</div>
-        <div class="htemp">6°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨10</div>
-      </div><div class="hc">
-        <div class="ht">22시</div>
-        <div class="hico">☀️</div>
-        <div class="htemp">5°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨8</div>
-      </div><div class="hc">
-        <div class="ht">23시</div>
-        <div class="hico">☀️</div>
-        <div class="htemp">4°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨8</div>
-      </div><div class="day-sep"><div class="day-sep-inner">4/21(화)</div></div><div class="hc">
-        <div class="ht">자정</div>
-        <div class="hico">☀️</div>
-        <div class="htemp">3°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨8</div>
-      </div><div class="hc">
-        <div class="ht">1시</div>
-        <div class="hico">☀️</div>
-        <div class="htemp">3°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨8</div>
-      </div><div class="hc">
-        <div class="ht">2시</div>
-        <div class="hico">☀️</div>
-        <div class="htemp">3°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨8</div>
-      </div><div class="hc">
-        <div class="ht">3시</div>
-        <div class="hico">☀️</div>
-        <div class="htemp">3°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨8</div>
-      </div><div class="hc">
-        <div class="ht">4시</div>
-        <div class="hico">☀️</div>
-        <div class="htemp">2°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨9</div>
-      </div><div class="hc">
-        <div class="ht">5시</div>
-        <div class="hico">☀️</div>
-        <div class="htemp">2°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨9</div>
-      </div><div class="hc">
-        <div class="ht">6시</div>
-        <div class="hico">☀️</div>
-        <div class="htemp">1°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨8</div>
-      </div><div class="hc">
-        <div class="ht">7시</div>
-        <div class="hico">🌤️</div>
-        <div class="htemp">3°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨7</div>
-      </div><div class="hc">
-        <div class="ht">8시</div>
-        <div class="hico">☀️</div>
-        <div class="htemp">6°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨7</div>
-      </div><div class="hc">
-        <div class="ht">9시</div>
-        <div class="hico">☀️</div>
-        <div class="htemp">9°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨9</div>
-      </div><div class="hc">
-        <div class="ht">10시</div>
-        <div class="hico">☁️</div>
-        <div class="htemp">11°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨11</div>
-      </div><div class="hc">
-        <div class="ht">11시</div>
-        <div class="hico">☁️</div>
-        <div class="htemp">13°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨13</div>
-      </div><div class="hc">
-        <div class="ht">12시</div>
-        <div class="hico">☁️</div>
-        <div class="htemp">14°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨15</div>
-      </div><div class="hc">
-        <div class="ht">13시</div>
-        <div class="hico">☁️</div>
-        <div class="htemp">14°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨15</div>
-      </div><div class="hc">
-        <div class="ht">14시</div>
-        <div class="hico">⛅</div>
-        <div class="htemp">16°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨16</div>
-      </div><div class="hc">
-        <div class="ht">15시</div>
-        <div class="hico">⛅</div>
-        <div class="htemp">16°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨17</div>
-      </div><div class="hc">
-        <div class="ht">16시</div>
-        <div class="hico">⛅</div>
-        <div class="htemp">15°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨18</div>
-      </div><div class="hc">
-        <div class="ht">17시</div>
-        <div class="hico">🌤️</div>
-        <div class="htemp">14°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨17</div>
-      </div><div class="hc">
-        <div class="ht">18시</div>
-        <div class="hico">🌤️</div>
-        <div class="htemp">13°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨15</div>
-      </div><div class="hc">
-        <div class="ht">19시</div>
-        <div class="hico">🌤️</div>
-        <div class="htemp">11°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨12</div>
-      </div><div class="hc">
-        <div class="ht">20시</div>
-        <div class="hico">🌤️</div>
-        <div class="htemp">10°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨9</div>
-      </div><div class="hc">
-        <div class="ht">21시</div>
-        <div class="hico">🌤️</div>
-        <div class="htemp">8°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨7</div>
-      </div><div class="hc">
-        <div class="ht">22시</div>
-        <div class="hico">⛅</div>
-        <div class="htemp">8°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨8</div>
-      </div><div class="hc">
-        <div class="ht">23시</div>
-        <div class="hico">🌤️</div>
-        <div class="htemp">7°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨7</div>
-      </div><div class="day-sep"><div class="day-sep-inner">4/22(수)</div></div><div class="hc">
-        <div class="ht">자정</div>
-        <div class="hico">🌤️</div>
-        <div class="htemp">7°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨7</div>
-      </div><div class="hc">
-        <div class="ht">1시</div>
-        <div class="hico">🌤️</div>
-        <div class="htemp">6°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨7</div>
-      </div><div class="hc">
-        <div class="ht">2시</div>
-        <div class="hico">⛅</div>
-        <div class="htemp">6°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨7</div>
-      </div><div class="hc">
-        <div class="ht">3시</div>
-        <div class="hico">🌤️</div>
-        <div class="htemp">6°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨7</div>
-      </div><div class="hc">
-        <div class="ht">4시</div>
-        <div class="hico">🌤️</div>
-        <div class="htemp">5°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨7</div>
-      </div><div class="hc">
-        <div class="ht">5시</div>
-        <div class="hico">⛅</div>
-        <div class="htemp">5°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨7</div>
-      </div><div class="hc">
-        <div class="ht">6시</div>
-        <div class="hico">⛅</div>
-        <div class="htemp">5°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨6</div>
-      </div><div class="hc">
-        <div class="ht">7시</div>
-        <div class="hico">☁️</div>
-        <div class="htemp">6°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨6</div>
-      </div><div class="hc">
-        <div class="ht">8시</div>
-        <div class="hico">☁️</div>
-        <div class="htemp">7°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨4</div>
-      </div><div class="hc">
-        <div class="ht">9시</div>
-        <div class="hico">☁️</div>
-        <div class="htemp">9°</div>
-        <div class="hrain">💧0%</div>
-        <div class="hwind">💨2</div>
-      </div><div class="hc">
-        <div class="ht">10시</div>
-        <div class="hico">⛅</div>
-        <div class="htemp">11°</div>
-        <div class="hrain">💧1%</div>
-        <div class="hwind">💨4</div>
-      </div><div class="hc">
-        <div class="ht">11시</div>
-        <div class="hico">⛅</div>
-        <div class="htemp">12°</div>
-        <div class="hrain">💧2%</div>
-        <div class="hwind">💨2</div>
-      </div><div class="hc">
-        <div class="ht">12시</div>
-        <div class="hico">☁️</div>
-        <div class="htemp">13°</div>
-        <div class="hrain">💧3%</div>
-        <div class="hwind">💨3</div>
-      </div><div class="hc">
-        <div class="ht">13시</div>
-        <div class="hico">⛅</div>
-        <div class="htemp">14°</div>
-        <div class="hrain">💧5%</div>
-        <div class="hwind">💨7</div>
-      </div><div class="hc">
-        <div class="ht">14시</div>
-        <div class="hico">⛅</div>
-        <div class="htemp">14°</div>
-        <div class="hrain">💧8%</div>
-        <div class="hwind">💨8</div>
-      </div><div class="hc">
-        <div class="ht">15시</div>
-        <div class="hico">⛅</div>
-        <div class="htemp">15°</div>
-        <div class="hrain">💧10%</div>
-        <div class="hwind">💨6</div>
-      </div><div class="hc">
-        <div class="ht">16시</div>
-        <div class="hico">🌤️</div>
-        <div class="htemp">16°</div>
-        <div class="hrain">💧10%</div>
-        <div class="hwind">💨5</div>
-      </div><div class="hc">
-        <div class="ht">17시</div>
-        <div class="hico">☁️</div>
-        <div class="htemp">16°</div>
-        <div class="hrain">💧9%</div>
-        <div class="hwind">💨9</div>
-      </div><div class="hc">
-        <div class="ht">18시</div>
-        <div class="hico">☁️</div>
-        <div class="htemp">15°</div>
-        <div class="hrain">💧8%</div>
-        <div class="hwind">💨6</div>
-      </div><div class="hc">
-        <div class="ht">19시</div>
-        <div class="hico">☁️</div>
-        <div class="htemp">12°</div>
-        <div class="hrain">💧7%</div>
-        <div class="hwind">💨6</div>
-      </div><div class="hc">
-        <div class="ht">20시</div>
-        <div class="hico">⛅</div>
-        <div class="htemp">11°</div>
-        <div class="hrain">💧6%</div>
-        <div class="hwind">💨8</div>
-      </div><div class="hc">
-        <div class="ht">21시</div>
-        <div class="hico">⛅</div>
-        <div class="htemp">10°</div>
-        <div class="hrain">💧5%</div>
-        <div class="hwind">💨9</div>
-      </div><div class="hc">
-        <div class="ht">22시</div>
-        <div class="hico">☁️</div>
-        <div class="htemp">10°</div>
-        <div class="hrain">💧4%</div>
-        <div class="hwind">💨9</div>
-      </div><div class="hc">
-        <div class="ht">23시</div>
-        <div class="hico">☁️</div>
-        <div class="htemp">9°</div>
-        <div class="hrain">💧3%</div>
-        <div class="hwind">💨9</div>
-      </div><div class="day-sep"><div class="day-sep-inner">4/23(목)</div></div><div class="hc">
-        <div class="ht">자정</div>
-        <div class="hico">⛅</div>
-        <div class="htemp">8°</div>
-        <div class="hrain">💧3%</div>
-        <div class="hwind">💨10</div>
-      </div><div class="hc">
-        <div class="ht">1시</div>
-        <div class="hico">☁️</div>
-        <div class="htemp">8°</div>
-        <div class="hrain">💧3%</div>
-        <div class="hwind">💨9</div>
-      </div><div class="hc">
-        <div class="ht">2시</div>
-        <div class="hico">🌤️</div>
-        <div class="htemp">8°</div>
-        <div class="hrain">💧3%</div>
-        <div class="hwind">💨7</div>
-      </div><div class="hc">
-        <div class="ht">3시</div>
-        <div class="hico">🌤️</div>
-        <div class="htemp">8°</div>
-        <div class="hrain">💧3%</div>
-        <div class="hwind">💨9</div>
-      </div><div class="hc">
-        <div class="ht">4시</div>
-        <div class="hico">⛅</div>
-        <div class="htemp">7°</div>
-        <div class="hrain">💧3%</div>
-        <div class="hwind">💨10</div>
-      </div><div class="hc">
-        <div class="ht">5시</div>
-        <div class="hico">⛅</div>
-        <div class="htemp">7°</div>
-        <div class="hrain">💧3%</div>
-        <div class="hwind">💨9</div>
-      </div><div class="hc">
-        <div class="ht">6시</div>
-        <div class="hico">⛅</div>
-        <div class="htemp">7°</div>
-        <div class="hrain">💧3%</div>
-        <div class="hwind">💨8</div>
-      </div><div class="hc">
-        <div class="ht">7시</div>
-        <div class="hico">⛅</div>
-        <div class="htemp">8°</div>
-        <div class="hrain">💧3%</div>
-        <div class="hwind">💨7</div>
-      </div><div class="hc">
-        <div class="ht">8시</div>
-        <div class="hico">☁️</div>
-        <div class="htemp">10°</div>
-        <div class="hrain">💧3%</div>
-        <div class="hwind">💨10</div>
-      </div><div class="hc">
-        <div class="ht">9시</div>
-        <div class="hico">🌤️</div>
-        <div class="htemp">13°</div>
-        <div class="hrain">💧3%</div>
-        <div class="hwind">💨13</div>
-      </div><div class="hc">
-        <div class="ht">10시</div>
-        <div class="hico">⛅</div>
-        <div class="htemp">14°</div>
-        <div class="hrain">💧3%</div>
-        <div class="hwind">💨14</div>
-      </div><div class="hc">
-        <div class="ht">11시</div>
-        <div class="hico">🌤️</div>
-        <div class="htemp">16°</div>
-        <div class="hrain">💧4%</div>
-        <div class="hwind">💨13</div>
-      </div><div class="hc">
-        <div class="ht">12시</div>
-        <div class="hico">⛅</div>
-        <div class="htemp">17°</div>
-        <div class="hrain">💧4%</div>
-        <div class="hwind">💨12</div>
-      </div><div class="hc">
-        <div class="ht">13시</div>
-        <div class="hico">⛅</div>
-        <div class="htemp">19°</div>
-        <div class="hrain">💧5%</div>
-        <div class="hwind">💨11</div>
-      </div><div class="hc">
-        <div class="ht">14시</div>
-        <div class="hico">⛅</div>
-        <div class="htemp">20°</div>
-        <div class="hrain">💧5%</div>
-        <div class="hwind">💨11</div>
-      </div></div></div></div>
 <script>
-// ── 전국 골프장 DB ──────────────────────────────────────
+// ── 전국 골프장 DB (OpenStreetMap 실측 좌표 · 해발고도 포함) ──
+// [이름, 지역, 위도, 경도, 해발m, (선택)별칭]
 const DB=[
-["가든 CC","경기 여주",37.312,127.588],
-["가야 CC","경남 김해",35.234,128.889],
-["가평 베네스트 GC","경기 가평",37.789,127.490],
-["강남 CC","경기 용인",37.201,127.198],
-["강촌 CC","강원 춘천",37.745,127.702],
-["강화 CC","인천 강화",37.712,126.412],
-["거제 CC","경남 거제",34.881,128.623],
-["경기 CC","경기 용인",37.278,127.112],
-["경주 CC","경북 경주",35.854,129.245],
-["고양 CC","경기 고양",37.712,126.851],
-["곤지암 CC","경기 광주",37.401,127.411],
-["광주 CC","경기 광주",37.429,127.266],
-["기흥 CC","경기 용인",37.254,127.115],
-["김해 CC","경남 김해",35.289,128.812],
-["남서울 CC","경기 용인",37.264,127.089],
-["남양주 CC","경기 남양주",37.651,127.321],
-["남해 CC","경남 남해",34.842,127.892],
-["내장산 CC","전북 정읍",35.481,126.891],
-["뉴코리아 CC","경기 가평",37.801,127.512],
-["대구 CC","대구",35.941,128.612],
-["대전 CC","대전",36.312,127.412],
-["덕평 CC","경기 이천",37.289,127.378],
-["동부산 CC","부산",35.189,129.212],
-["라온 프라이빗 타운","제주",33.489,126.410],
-["레이크사이드 CC","경기 용인",37.235,127.179],
-["레이크우드 CC","경기 화성",37.201,126.978],
-["롯데 스카이힐","경남 거제",34.921,128.712],
-["무주 덕유산 리조트","전북 무주",35.908,127.713],
-["베어크리크 CC","경기 용인",37.189,127.121],
-["베어즈베스트 청라","인천 청라",37.534,126.634],
-["보광 파인리조트","경기 가평",37.763,127.398],
-["블루원 상주","경북 상주",36.427,128.132],
-["블루원 용인","경기 용인",37.198,127.201],
-["서울 CC","경기 용인",37.301,127.098],
-["설악 CC","강원 속초",38.152,128.524],
-["세이지우드 CC","강원 홍천",37.713,128.058],
-["소노펠리체 CC","강원 홍천",37.713,128.058],
-["스카이72 GC","인천 영종",37.489,126.489],
-["아난티 CC","경기 가평",37.834,127.523],
-["아시아나 CC","충남 예산",36.680,126.845],
-["안양 CC","경기 안양",37.382,126.961],
-["에이원 CC","경기 광주",37.365,127.278],
-["엘리시안 제주 CC","제주",33.451,126.321],
-["여주 CC","경기 여주",37.298,127.598],
-["오크밸리 CC","강원 원주",37.295,128.152],
-["용평 GC","강원 평창",37.678,128.712],
-["울산 CC","울산",35.578,129.312],
-["이스트밸리 CC","경기 이천",37.198,127.432],
-["일동 레이크 GC","경기 포천",37.867,127.234],
-["제주 CC","제주",33.378,126.523],
-["제주 핀크스 GC","제주 서귀포",33.301,126.372],
-["제주 해비치 CC","제주 서귀포",33.289,126.789],
-["천안 CC","충남 천안",36.812,127.134],
-["청주 CC","충북 청주",36.678,127.489],
-["클럽나인브릿지","제주 서귀포",33.296,126.512],
-["태광 CC","경기 파주",37.782,126.835],
-["파인비치 GC","경남 거제",34.912,128.689],
-["파인크리크 CC","경기 가평",37.806,127.510],
-["파주 CC","경기 파주",37.789,126.823],
-["포천 CC","경기 포천",37.878,127.212],
-["하이원 CC","강원 정선",37.212,128.978],
-["한국 CC","경기 용인",37.289,127.189],
-["해슬리나인브릿지","경기 여주",37.281,127.639],
-["해운대 CC","부산",35.178,129.189],
-["화성 CC","경기 화성",37.176,126.898],
-["휘닉스 파크 GC","강원 평창",37.558,128.487],
-["힐데스하임 CC","충남 아산",36.789,127.023],
-["가일 CC","경기 가평",37.812,127.467],
-["강릉 CC","강원 강릉",37.741,128.891],
-["거창 CC","경남 거창",35.689,127.912],
-["골드 CC","경기 안성",37.012,127.278],
-["광양 CC","전남 광양",34.934,127.689],
-["국민 CC","경기 포천",37.912,127.156],
-["군산 CC","전북 군산",35.978,126.712],
-["금강 CC","충남 공주",36.456,127.123],
-["기장 CC","부산 기장",35.245,129.234],
-["김포 CC","경기 김포",37.623,126.712],
-["나주 CC","전남 나주",35.012,126.723],
-["남악 CC","전남 무안",34.878,126.489],
-["논산 CC","충남 논산",36.189,127.089],
-["단양 CC","충북 단양",37.012,128.367],
-["담양 CC","전남 담양",35.312,126.989],
-["대부도 CC","경기 안산",37.278,126.523],
-["대신 CC","경기 안성",37.045,127.312],
-["대왕 CC","경기 성남",37.423,127.156],
-["덕산 CC","충남 예산",36.712,126.678],
-["동국 CC","경기 포천",37.923,127.167],
-["동래 CC","부산",35.234,129.056],
-["동문 CC","제주",33.523,126.834],
-["마에스트로 CC","경기 여주",37.312,127.567],
-["마이다스 CC","강원 홍천",37.623,127.923],
-["명지 CC","경남 창원",35.189,128.612],
-["목포 CC","전남 목포",34.812,126.423],
-["무안 CC","전남 무안",34.934,126.512],
-["밀양 CC","경남 밀양",35.489,128.745],
-["보성 CC","전남 보성",34.789,127.078],
-["봉황 CC","경기 여주",37.278,127.534],
-["부산 아시아드 CC","부산",35.206,129.054],
-["부여 CC","충남 부여",36.278,126.923],
-["비젠 CC","충북 충주",36.978,127.812],
-["사천 CC","경남 사천",34.934,128.145],
-["삼성 래미안 CC","경기 용인",37.210,127.234],
-["서산 CC","충남 서산",36.789,126.423],
-["서원밸리 CC","경기 가평",37.812,127.423],
-["선운산 CC","전북 고창",35.489,126.589],
-["성남 CC","경기 성남",37.423,127.134],
-["순천 CC","전남 순천",34.934,127.501],
-["신원 CC","경기 가평",37.823,127.534],
-["아일랜드 CC","인천 영종",37.501,126.501],
-["안동 CC","경북 안동",36.534,128.723],
-["양산 CC","경남 양산",35.312,129.034],
-["여수 CC","전남 여수",34.745,127.712],
-["연천 CC","경기 연천",38.012,127.045],
-["영광 CC","전남 영광",35.234,126.501],
-["영종 CC","인천 영종",37.512,126.523],
-["영주 CC","경북 영주",36.823,128.634],
-["오크힐스 CC","전남 해남",34.512,126.589],
-["온양 CC","충남 아산",36.812,127.056],
-["완주 CC","전북 완주",35.912,127.123],
-["원주 CC","강원 원주",37.345,127.956],
-["의왕 CC","경기 의왕",37.334,126.967],
-["이천 CC","경기 이천",37.278,127.434],
-["인천 CC","인천",37.478,126.623],
-["일산 CC","경기 고양",37.689,126.812],
-["임실 CC","전북 임실",35.612,127.289],
-["장성 CC","전남 장성",35.312,126.789],
-["장흥 CC","전남 장흥",34.689,126.912],
-["전주 CC","전북 전주",35.812,127.089],
-["정읍 CC","전북 정읍",35.578,126.867],
-["제천 CC","충북 제천",37.134,128.234],
-["진도 CC","전남 진도",34.478,126.267],
-["진주 CC","경남 진주",35.156,128.056],
-["창원 CC","경남 창원",35.267,128.523],
-["천마산 CC","경기 남양주",37.634,127.323],
-["철원 CC","강원 철원",38.089,127.312],
-["청도 CC","경북 청도",35.645,128.723],
-["청양 CC","충남 청양",36.456,126.812],
-["춘천 CC","강원 춘천",37.823,127.712],
-["충주 CC","충북 충주",36.989,127.934],
-["칠곡 CC","경북 칠곡",35.934,128.456],
-["통영 CC","경남 통영",34.845,128.412],
-["평창 CC","강원 평창",37.534,128.512],
-["포스코 CC","경북 포항",36.034,129.378],
-["포항 CC","경북 포항",36.012,129.345],
-["풀무원 CC","충북 음성",36.934,127.612],
-["하동 CC","경남 하동",35.067,127.756],
-["함안 CC","경남 함안",35.267,128.367],
-["함평 CC","전남 함평",35.067,126.512],
-["해남 CC","전남 해남",34.567,126.601],
-["홍성 CC","충남 홍성",36.612,126.645],
-["횡성 CC","강원 횡성",37.489,127.978],
-["가온 CC","충북 충주",36.887,127.934],
-["강동 CC","경기 하남",37.552,127.261],
-["강변 CC","경기 양평",37.512,127.489],
-["경남 CC","경남 창원",35.231,128.571],
-["레이크힐스 CC","경기 용인",37.212,127.156],
-["베이사이드 CC","경기 화성",37.156,126.834],
-["블루헤런 CC","경기 양주",37.858,127.078],
-["서울 힐스 CC","경기 남양주",37.712,127.298],
-["스프링 CC","경기 이천",37.245,127.456],
-["아너스 CC","경기 용인",37.223,127.167],
-["아트밸리 CC","경기 포천",37.901,127.178],
-["양지 파인 CC","경기 용인",37.178,127.212],
-["에코 CC","경기 양평",37.489,127.512],
-["엘리트 CC","경기 안성",37.023,127.301],
-["오산 CC","경기 오산",37.145,127.078],
-["웨스트힐스 CC","경기 화성",37.156,126.923],
-["유성 CC","대전 유성",36.367,127.312],
-["이글 CC","경기 이천",37.212,127.489],
-["자연 CC","경기 가평",37.834,127.489],
-["제이드 팰리스 CC","강원 홍천",37.689,127.967],
-["천지인 CC","경기 양평",37.523,127.567],
-["클럽 W CC","경기 양주",37.867,127.045],
-["파미힐스 CC","충남 금산",36.089,127.523],
-["팜스프링 CC","경기 여주",37.301,127.545],
-["한양 CC","경기 고양",37.712,126.912],
-["한화 CC","충남 태안",36.745,126.312],
-["해슬리 CC","경기 여주",37.289,127.623],
-["현대 CC","경기 용인",37.234,127.156],
-["화순 CC","전남 화순",35.056,126.978],
-["효성 CC","경기 가평",37.801,127.478]
+["123 GC","경기 고양",37.64043,126.90558,44],
+["360도 CC","경기 여주",37.29690,127.73642,227],
+["IN코스","강원 원주",37.41907,127.81757,306],
+["JNJ골프리조트","전남 장흥",34.79710,126.97167,188],
+["K밸리 컨트리클럽","전북 완주",36.07426,127.35508,212],
+["OK CC","전북 완주",35.81762,127.26215,144],
+["River Bend Golf Course","경기 평택",36.96936,126.98818,5],
+["SG아름다운 CC","충남 아산",36.84626,126.92080,147],
+["The Lakes at Osan","경기 평택",37.07913,127.02446,12],
+["YJC골프클럽","경기 여주",37.28047,127.60274,153],
+["가야 CC","경남 김해",35.27368,128.89722,335],
+["가평베네스트 GC","경기 가평",37.79996,127.30464,400],
+["감곡 CC","충북 음성",37.13054,127.69736,202],
+["강남300CC","경기 광주",37.38321,127.18130,251],
+["거제뷰 CC","경남 거제",34.87921,128.58906,251],
+["경기경찰청 CC","경기 용인",37.30061,127.13093,180],
+["경주 CC","경북 경주",35.86777,129.26103,118],
+["경주신라 CC","경북 경주",35.85563,129.28574,117],
+["고령오펠 GC","경북 고령",35.81368,128.38197,111],
+["고성 CC","경남 고성",34.94527,128.35684,60],
+["고성노벨 CC","경남 고성",35.06768,128.40600,53],
+["고양 CC","경기 고양",37.63544,126.85858,42],
+["고창칸트리클럽","전북 고창",35.52151,126.50448,5],
+["곤지암 GC","경기 광주",37.33089,127.29716,235],
+["골드그린 GC","울산 울주",35.50760,129.07410,233],
+["골드나인 CC","충북 청주",36.61481,127.61818,274],
+["골드레이크 CC","전남 나주",34.96025,126.87258,67],
+["골든베이골프&리조트","충남 태안",36.70739,126.17228,55],
+["골프존카운티 드래곤","전북 남원",35.43415,127.34267,191],
+["골프존카운티 무주","전북 무주",35.83081,127.63444,524],
+["골프존카운티 사천","경남 사천",35.01009,127.95255,36],
+["골프존카운티 선산","경북 구미",36.15742,128.44900,73],
+["골프존카운티 선운","전북 고창",35.49300,126.64587,147],
+["골프존카운티 순천","전남 순천",35.04658,127.30740,227],
+["골프존카운티 안성H","경기 안성",37.09621,127.33547,171],
+["골프존카운티 안성W","경기 안성",37.07647,127.19392,143],
+["골프존카운티 진천","충북 진천",36.81639,127.40136,214],
+["골프존카운티 천안","충남 천안",36.80302,127.30737,194],
+["골프존카운티 청통","경북 영천",35.98777,128.81265,124],
+["골프존카운티 화랑","충북 진천",36.82151,127.47053,131],
+["골프존카운티감포","경북 경주",35.77589,129.48406,148],
+["골프클럽Q","경기 안성",37.04592,127.39133,263],
+["광양 CC","전남 광양",34.95494,127.70842,138],
+["광주 CC","전남 곡성",35.30900,127.17331,133],
+["구니 컨트리클럽","대구 군위",36.25274,128.54489,142],
+["구룡대 CC","충남 계룡",36.31955,127.23580,141],
+["구미 CC","경북 구미",36.16947,128.48331,97],
+["군산 컨트리클럽","전북 군산",35.88872,126.65119,2],
+["군위오펠 GC","대구 군위",36.11492,128.68226,265],
+["그랜드 CC","충북 청주",36.72050,127.37859,89],
+["그린필드 CC","제주 제주",33.46595,126.64387,345],
+["그린힐 CC","경기 광주",37.35987,127.43161,241],
+["글렌로스 CC","경기 용인",37.29395,127.18085,192],
+["금강 CC","경기 여주",37.24156,127.60309,143],
+["금과골프장","전북 순창",35.35461,127.08349,134],
+["기장동원로얄 컨트리클럽","부산 기장",35.25740,129.18940,242],
+["기흥 CC","경기 화성",37.19261,127.14957,144],
+["김제스파힐스 CC","전북 김제",35.83105,126.91781,22],
+["김포 씨사이드 CC","경기 김포",37.70165,126.53426,38],
+["김해상록 GC","경남 김해",35.27308,128.79675,238],
+["나인브릿지 CC","제주 서귀포",33.33905,126.40223,601],
+["나주 컨트리클럽","전남 나주",34.94046,126.64019,39],
+["나주힐스 컨트리클럽","전남 나주",34.89183,126.72531,64],
+["남부 CC","경기 용인",37.26287,127.12552,125],
+["남서울 컨트리클럽","경기 성남",37.38176,127.08467,139],
+["남성대체력단련장","충북 영동",36.15596,127.77573,178],
+["남수원 CC","경기 화성",37.21647,127.00744,116],
+["남안동 컨트리클럽","경북 안동",36.47382,128.61206,218],
+["남양주 CC","경기 남양주",37.67862,127.21551,145],
+["남여주 GC","경기 여주",37.22535,127.62729,153],
+["남원상록 GC","전북 남원",35.41463,127.29634,149],
+["남촌 CC","경기 광주",37.35173,127.41725,185],
+["남춘천 CC","강원 춘천",37.79131,127.69263,213],
+["내장산골프&리조트","전북 정읍",35.50451,126.86673,115],
+["노스팜 CC","경기 파주",37.78580,126.91267,144],
+["뉴서울 CC","경기 광주",37.42462,127.21266,257],
+["뉴스프링빌 CC 이천","경기 이천",37.15752,127.42095,170],
+["뉴스프링빌2CC 백화산","경북 상주",36.28382,127.86935,245],
+["뉴코리아 CC","경기 고양",37.66573,126.87882,88],
+["다산베아채 CC","전남 강진",34.54746,126.76113,38],
+["다이아몬드 CC","경남 양산",35.42357,129.03264,305],
+["담양다이너스티 CC","전남 담양",35.30894,127.02138,197],
+["대가야 CC","경북 고령",35.71552,128.25207,50],
+["대구 컨트리클럽 (Daegue Country Club)","경북 경산",35.86694,128.81103,78],
+["대영베이스 컨트리클럽","충북 충주",36.94634,127.83557,208],
+["대영힐스 컨트리클럽","충북 충주",36.95238,127.85306,162],
+["대호단양 CC","충북 단양",37.08797,128.27615,236],
+["더 그레이스 컨트리클럽","경북 청도",35.66095,128.64447,114],
+["더나인 골프클럽","전북 김제",35.79735,127.02953,40],
+["더스타휴 골프앤리조트","경기 양평",37.47588,127.70066,252],
+["더크로스비 골프클럽","경기 이천",37.23417,127.41434,161],
+["더클래식 컨트리클럽","제주 서귀포",33.36762,126.68406,393],
+["더플레이어스 GC","강원 춘천",37.77491,127.74672,301],
+["더힐 컨트리클럽","충남 논산",36.27557,127.16796,80],
+["도고칸트리구락부","충남 아산",36.77870,126.89024,36],
+["동래배네스트 CC","부산 금정구",35.26272,129.09898,82],
+["동부산 컨트리클럽","경남 양산",35.35883,129.18387,226],
+["동서울레스피아 골프&리조트","강원 원주",37.39984,127.87541,94],
+["동여주 CC","경기 여주",37.21804,127.61723,122],
+["동원로얄 CC 통영","경남 통영",34.81100,128.42814,98],
+["동원썬밸리 CC","강원 횡성",37.48469,127.78950,240],
+["동촌 GC","충북 충주",37.05595,127.74536,247],
+["동훈힐마루 CC","경남 창녕",35.49351,128.49558,45],
+["드림파크 CC","인천 검단구",37.57667,126.63367,39],
+["드비치 GC","경남 거제",35.01340,128.67508,57],
+["디오션 CC","전남 여수",34.64788,127.62564,64],
+["떼제베 골프장(TGV CC)","충북 청주",36.66549,127.32237,160],
+["라데나 골프 클럽","강원 춘천",37.84092,127.72141,135],
+["라비돌 CC","경기 화성",37.18897,126.98500,100],
+["라비에벨 CC","강원 춘천",37.74189,127.76260,266],
+["라온 GC","제주 제주",33.33999,126.28070,160],
+["라온프라이빗 CC","제주 제주",33.37709,126.24163,41],
+["라헨느골프리조트","제주 제주",33.45739,126.60921,383],
+["레이크사이드 CC","경기 용인",37.31024,127.16775,237],
+["레이크우드 컨트리클럽","경기 양주",37.78087,127.08830,99],
+["레이크힐스경남 컨트리클럽","경남 함안",35.30999,128.57314,168],
+["레이크힐스용인 CC","경기 용인",37.13008,127.18549,87],
+["레인보우힐스 CC","충북 음성",37.02529,127.64992,276],
+["렉스필드 CC","경기 여주",37.40321,127.42194,366],
+["로드힐스 CC","강원 춘천",37.73944,127.72416,216],
+["로얄힐스 CC","충남 태안",36.72130,126.33739,1],
+["롯데스카이힐 CC","충남 부여",36.30282,126.90565,46],
+["롯데스카이힐 제주 CC (Lotte Sky Hill jeju)","제주 서귀포",33.28915,126.40651,329],
+["루나엑스골프장","경북 경주",35.91364,129.31389,407],
+["루나힐스안성 컨트리클럽","경기 안성",37.11923,127.26864,152],
+["루트52컨트리클럽","경기 여주",37.34733,127.72437,159],
+["르오네트 컨트리클럽","전남 곡성",35.25173,127.09593,203],
+["리더스 컨트리클럽","경남 밀양",35.47582,128.81441,117],
+["리베라 CC","경기 화성",37.19054,127.10767,56],
+["리앤리 CC","경기 가평",37.87394,127.36371,281],
+["링크나인 골프클럽","경기 화성",37.17057,126.75415,6],
+["마론뉴데이 CC","충남 천안",36.86594,127.25571,310],
+["마스터피스 컨트리클럽","경북 고령",35.70442,128.21507,124],
+["마에스트로 CC","경기 안성",37.10440,127.26246,119],
+["마우나오션 CC","경북 경주",35.68382,129.37387,419],
+["마이다스레이크이천 골프앤리조트","경기 이천",37.17399,127.52482,93],
+["메이플비치","강원 강릉",37.74426,128.96750,8],
+["명밀양 컨트리클럽","경남 밀양",35.45926,128.73528,76],
+["모나크 CC","충북 음성",37.00874,127.62765,258],
+["몽베르 CC","경기 포천",38.08199,127.30449,311],
+["무등산 CC","전남 화순",35.04491,126.93522,97],
+["무안 CC","전남 무안",34.96375,126.40742,1],
+["무안클린밸리 CC","전남 무안",34.94135,126.45849,105],
+["무주덕유산 CC","전북 무주",35.88488,127.72422,894],
+["문경 GC","경북 문경",36.71401,128.15540,357],
+["밀양노벨 CC","경남 밀양",35.47690,128.86104,324],
+["밀양에스파크 컨트리클럽","경남 밀양",35.49648,128.82797,31],
+["발리오스 CC","경기 화성",37.11566,126.86033,44],
+["백양우리 컨트리클럽","전남 장성",35.42063,126.80938,110],
+["백제 컨트리클럽","충남 부여",36.34257,126.79357,151],
+["버치힐 CC","강원 평창",37.65563,128.70594,744],
+["베뉴지 CC","경기 가평",37.84767,127.46845,230],
+["베르힐 CC 영종","인천 영종구",37.52889,126.56408,10],
+["베르힐 CC 함평","전남 함평",35.07521,126.56831,86],
+["베스트밸리 GC","경기 파주",37.75688,126.88605,133],
+["베어즈베스트청라 GC","인천 서해구",37.55045,126.62869,4],
+["베어크리크 GC","경기 포천",37.91008,127.28741,171],
+["베어크리크 GC 춘천","강원 춘천",37.76922,127.72025,305],
+["베이스타즈 CC","울산 북구",35.58970,129.43509,108],
+["보라 컨트리클럽","울산 울주",35.49508,129.13485,153],
+["보령베이스 CC","충남 보령",36.33138,126.61935,78],
+["보문 골프클럽","경북 경주",35.85906,129.27334,105],
+["보성 CC","전남 보성",34.81880,127.22102,145],
+["보성에덴 CC","전남 보성",34.75375,127.05214,227],
+["부곡 컨트리클럽","경남 창녕",35.44655,128.57885,89],
+["부산 컨트리클럽","부산 금정구",35.29833,129.09010,131],
+["부영 CC","제주 서귀포",33.36069,126.71582,265],
+["부영CC순천","전남 순천",34.93657,127.55613,48],
+["블랙밸리 CC","강원 삼척",37.22385,129.06686,445],
+["블랙스톤 CC","제주 제주",33.33804,126.30846,269],
+["블랙스톤 벨포레 CC","충북 증평",36.84408,127.58660,195],
+["블랙스톤이천 GC","경기 여주",37.16597,127.61784,104],
+["블루버드 CC","경기 광주",37.38581,127.36794,400],
+["블루원 디아너스 CC","경북 경주",35.82408,129.29819,230],
+["블루원 용인 CC","경기 용인",37.12943,127.32032,170],
+["블루원상주 CC","경북 상주",36.33544,127.93964,312],
+["블루헤런 GC","경기 여주",37.38180,127.64697,143],
+["비에이비스타 CC","경기 이천",37.17919,127.41768,208],
+["비콘힐스 골프클럽","강원 홍천",37.62453,127.86879,353],
+["빅토리아 CC","경기 여주",37.17880,127.63036,80],
+["빛고을 CC","광주 남구",35.09808,126.89895,88],
+["사우스링스 영암","전남 영암",34.73750,126.43103,12],
+["사우스스프링스 CC","경기 이천",37.17549,127.45612,115],
+["사우스케이프오너스클럽","경남 남해",34.83685,128.07228,67],
+["사이언스 대덕 CC","대전 유성구",36.40534,127.39054,84],
+["사이프러스 CC","제주 서귀포",33.41268,126.74494,273],
+["사천체력단련장","경남 사천",35.10124,128.08561,18],
+["삼삼 컨트리클럽","경남 사천",35.10985,128.04758,44],
+["상떼힐익산 CC","전북 익산",35.96145,127.02680,40],
+["상무대체력단련장","전남 장성",35.25081,126.59106,168],
+["샌드파인 GC","강원 강릉",37.79888,128.88136,40],
+["샤인데일골프리조트","강원 홍천",37.67503,127.56347,223],
+["샤인빌파크 CC-PALM코스","제주 서귀포",33.34870,126.79093,92],
+["샤인빌파크 CC-RIVER코스","제주 서귀포",33.34248,126.78360,80],
+["샴발라 CC","경기 포천",37.86696,127.25692,286],
+["서경타니 CC","경남 사천",35.09881,128.01997,22],
+["서라벌 골프클럽","경북 경주",35.68911,129.27744,251],
+["서산수 컨트리클럽","충남 서산",36.98981,126.44601,39],
+["서서울 CC","경기 파주",37.73156,126.89588,179],
+["서안성 골프클럽","경기 안성",37.06198,127.14152,59],
+["서울공항 체력단련장","경기 성남",37.43085,127.11118,28],
+["서원밸리 CC","경기 파주",37.81857,126.89237,88],
+["서원힐스 CC","경기 파주",37.81713,126.90281,106],
+["서평택 골프클럽 파3골프장","경기 평택",36.99231,126.85885,26],
+["석정힐 CC","전북 고창",35.42712,126.73961,112],
+["선리치 GC","경북 경주",35.95164,129.20580,92],
+["선봉대 체력단련장","경기 용인",37.24777,127.18231,160],
+["설악썬밸리 CC","강원 고성",38.31425,128.50226,49],
+["설해원","강원 양양",38.05081,128.66401,79],
+["성문안 CC","강원 원주",37.39848,127.83246,222],
+["세라지오 CC","경기 여주",37.32796,127.65845,119],
+["세레니티 CC","충북 청주",36.54733,127.38797,146],
+["세븐밸리 CC","경북 칠곡",36.01568,128.46245,139],
+["세이지우드 CC 홍천","강원 홍천",37.88322,128.11729,699],
+["세인트포 CC","제주 제주",33.51972,126.73744,100],
+["세일 CC","충북 충주",37.02715,127.67442,303],
+["세종레이캐슬 CC","세종",36.61798,127.19113,232],
+["세종에머슨 컨트리클럽","세종",36.69872,127.17676,154],
+["세종필드 골프클럽","세종",36.53581,127.25671,106],
+["세현 CC","경기 용인",37.18828,127.18975,143],
+["센추리21CC","강원 원주",37.28361,127.85117,243],
+["센테리움","충북 충주",37.02829,127.78400,180],
+["소노펠리체 CC 델피노","강원 고성",38.21026,128.49246,197],
+["소노펠리체 CC 비발디파크 EAST","강원 홍천",37.66346,127.68647,314],
+["소노펠리체 CC 비발디파크 WEST","강원 홍천",37.64125,127.67543,398],
+["소피아그린 CC","경기 여주",37.17914,127.70327,216],
+["솔라고 컨트리클럽","충남 태안",36.69461,126.32385,1],
+["솔모로 CC","경기 여주",37.19011,127.59016,102],
+["솔트베이 GC","경기 시흥",37.39102,126.76907,5],
+["송도 GC","인천 연수구",37.41324,126.65120,7],
+["송추 CC","경기 양주",37.79695,126.91059,197],
+["수원 CC","경기 용인",37.28218,127.12388,107],
+["순창 CC","전북 순창",35.38902,127.12357,217],
+["순천 CC","전남 순천",34.86701,127.40119,271],
+["스마트 KU골프파빌리온","경기 파주",37.82287,126.87744,72],
+["스카이72 골프장 바다코스 (제5활주로 건설 예정지)","인천 영종구",37.47888,126.47239,4],
+["스카이72 골프장 하늘코스","인천 영종구",37.44976,126.48202,33],
+["스카이밸리 CC","경기 여주",37.33188,127.72925,154],
+["스카이뷰 CC","경남 함양",35.68771,127.71488,604],
+["스타 CC","충북 충주",37.08405,127.70019,336],
+["스톤게이트 CC","부산 기장",35.28606,129.20072,103],
+["스톤비치 컨트리클럽","충남 태안",36.68825,126.15789,2],
+["스프링데일 CC","제주 서귀포",33.32971,126.63570,370],
+["시그너스 CC","충북 충주",37.17408,127.73685,130],
+["시엘 골프클럽 (Ciel Golf Club)","경북 영천",35.99537,128.85618,136],
+["신라 CC","경기 여주",37.36225,127.69742,216],
+["신안 CC","경기 안성",37.09528,127.24873,109],
+["신원 CC","경기 용인",37.18142,127.24419,204],
+["써닝포인트 CC","경기 용인",37.14293,127.42192,179],
+["써미트 컨트리클럽","전북 진안",35.83937,127.32372,397],
+["썬밸리 CC","충북 음성",37.03962,127.46380,205],
+["썬힐 GC","경기 가평",37.87503,127.34934,245],
+["아난티 남해 골프클럽","경남 남해",34.77662,127.85271,34],
+["아난티 중앙 골프클럽","충북 진천",36.93762,127.33929,270],
+["아난티클럽 서울","경기 가평",37.61940,127.47950,358],
+["아네스빌 CC","전북 김제",35.78617,126.96034,28],
+["아덴힐리조트앤 골프클럽","제주 제주",33.34520,126.36374,463],
+["아델스코트 CC","경남 합천",35.69999,128.08617,539],
+["아라미르 골프앤리조트","경남 창원",35.09086,128.74430,3],
+["아리스타 CC","충남 논산",36.08451,127.12828,128],
+["아리지 CC","경기 여주",37.21494,127.59510,126],
+["아산 CC","충남 아산",36.84345,127.01455,49],
+["아세코밸리골프클럽클럽하우스","경기 시흥",37.36853,126.76952,23],
+["아시아나 CC","경기 용인",37.25766,127.28289,220],
+["아시아드 CC","부산 기장",35.28285,129.24294,50],
+["아일랜드 CC","경기 안산",37.23075,126.56279,53],
+["아크로 컨트리클럽","전남 영암",34.86741,126.79035,300],
+["안강레전드 골프클럽","경북 경주",35.99848,129.16316,83],
+["안동레이크 골프클럽","경북 안동",36.56302,128.77450,217],
+["안동리버힐 컨트리클럽","경북 안동",36.48944,128.57257,246],
+["안성 CC","경기 안성",37.03655,127.40567,191],
+["안성베네스트 골프클럽","경기 안성",37.01941,127.38493,248],
+["안양 컨트리클럽","경기 군포",37.33764,126.94176,64],
+["알펜시아 트룬 CC","강원 평창",37.65311,128.65798,785],
+["알펜시아700GC","강원 평창",37.66285,128.68835,757],
+["알프스대영 CC","강원 횡성",37.46360,128.07144,243],
+["애플밸리 컨트리클럽","경북 김천",36.22412,128.05965,235],
+["양산 CC","경남 양산",35.40018,129.04470,148],
+["양산동원로얄 컨트리클럽","경남 양산",35.39535,129.02050,175],
+["양주 CC","경기 남양주",37.64353,127.35467,138],
+["양지파인 CC","경기 용인",37.21690,127.29343,238],
+["양평TPC골프클럽","경기 양평",37.41350,127.64707,214],
+["어등산 CC","광주 광산구",35.16671,126.77252,177],
+["에덴벨리 컨트리클럽","경남 양산",35.42752,128.99313,643],
+["에덴블루 CC","경기 안성",37.05472,127.38721,221],
+["에버리스 CC","제주 제주",33.37583,126.36036,388],
+["에버힐 골프클럽","충북 청주",36.52006,127.45156,167],
+["에스앤골프리조트","충남 보령",36.28278,126.55434,5],
+["에스페란사 골프클럽","전북 김제",35.80507,127.00683,32],
+["에이원 CC","경남 양산",35.37664,129.17487,222],
+["에이치원클럽","경기 이천",37.18467,127.40059,149],
+["에코랜드 CC","제주 제주",33.45873,126.67144,377],
+["에콜리안 CC 거창","경남 거창",35.69357,128.05409,421],
+["에콜리안 정선 CC","강원 정선",37.22303,128.68360,531],
+["에콜리안광산 CC","광주 광산구",35.10866,126.74298,40],
+["에콜리안영광 CC","전남 영광",35.29693,126.50040,34],
+["에콜리안제천 CC","충북 제천",37.17328,128.23788,289],
+["엘리시안제주 CC","제주 제주",33.37189,126.37834,514],
+["엘리체 컨트리클럽","전남 화순",34.95435,126.92277,147],
+["엠스클럽의성 컨트리클럽","경북 의성",36.28227,128.55669,137],
+["여수경도골프앤리조트 CC","전남 여수",34.71530,127.72498,33,"세이지우드 여수경도 경도"],
+["여수시티파크리조트","전남 여수",34.77607,127.68777,170],
+["여주썬밸리 CC","경기 여주",37.26976,127.73452,188],
+["영남알프스 CC","울산 울주",35.54114,129.09701,199],
+["오너스 GC","강원 춘천",37.77043,127.65803,219],
+["오동도코스","전남 여수",34.71389,127.72117,8],
+["오라 CC","제주 제주",33.44592,126.51039,303],
+["오렌지듄스 GC","인천 연수구",37.35177,126.58856,7],
+["오렌지듄스영종 GC","인천 영종구",37.43565,126.45789,5],
+["오르비스 GC","울산 울주",35.44930,129.27581,124],
+["오산체력단련장","경기 평택",37.07668,127.00099,7],
+["오션비치 CC","경북 영덕",36.34232,129.37266,78],
+["오션힐스 영천 CC","경북 영천",36.04402,129.01335,178],
+["오션힐스 청도 GC","경북 청도",35.67498,128.81186,472],
+["오션힐스 포항 CC","경북 포항",36.24545,129.35134,149],
+["오창에딘버러 컨트리클럽","충북 청주",36.73434,127.42828,135],
+["오크밸리 CC","강원 원주",37.42680,127.82105,310],
+["오크힐스 CC","강원 원주",37.40641,127.81635,241],
+["오투리조트 CC","강원 태백",37.15989,128.94946,945],
+["오펠 골프클럽 (O'phell Golf Club)","경북 영천",36.01033,129.05361,156],
+["옥과기안 CC","전남 곡성",35.28854,127.16351,104],
+["옥스필드 CC","강원 횡성",37.52046,127.84599,391],
+["올림픽 CC","경기 고양",37.72153,126.89174,225],
+["용인 CC","경기 용인",37.11204,127.34606,182],
+["용인플라자 CC","경기 용인",37.13211,127.14056,102],
+["용평 CC","강원 평창",37.64841,128.70431,752],
+["용평나인 GC","강원 평창",37.64461,128.68955,830],
+["우리들 CC","제주 서귀포",33.30700,126.58973,286],
+["우정힐스 CC","충남 천안",36.76833,127.21984,131],
+["울산 컨트리클럽","울산 울주",35.44155,129.18351,204],
+["울진마린 CC","경북 울진",36.88764,129.39735,132],
+["웅포 골프클럽","전북 익산",36.07001,126.88941,63],
+["원더클럽 파가니카 CC","강원 춘천",37.75180,127.61392,193],
+["월드 CC","경북 영주",36.76536,128.56144,123],
+["웨스트오션 CC","전남 영광",35.35474,126.41893,258],
+["웰리힐리 CC","강원 횡성",37.48084,128.23635,637],
+["웰링턴 CC","경기 이천",37.16716,127.42461,137],
+["위례골프장","경기 하남",37.47968,127.15537,52],
+["윈체스트 GC","경기 안성",36.96196,127.28863,104],
+["유니밸리 컨트리클럽","경북 고령",35.68054,128.29415,93],
+["유니아일랜드 골프&스파 리조트","인천 강화",37.65460,126.34645,4],
+["유성 컨트리클럽","대전 유성구",36.35552,127.29694,105],
+["육군체력단련장","경남 함안",35.27943,128.35951,51],
+["은화삼 CC","경기 용인",37.21560,127.22037,186],
+["의령리온 CC","경남 의령",35.35683,128.18502,205],
+["의령친환경골프장","경남 의령",35.29236,128.29142,12],
+["이글몬트 CC","경기 안성",37.09590,127.32465,161],
+["이븐데일 CC","충북 청주",36.68376,127.60671,428],
+["이스턴 컨트리클럽","경북 포항",36.16291,129.36258,46],
+["이스트밸리 CC","경기 광주",37.40553,127.38532,364],
+["이스트힐 CC","경북 경주",35.72532,129.37530,457],
+["이지스카이 CC","대구 군위",36.28902,128.54172,163],
+["이천실크밸리 GC","경기 이천",37.08154,127.57252,126],
+["이포 CC","경기 여주",37.38921,127.49767,116],
+["인서울27골프클럽","서울 강서구",37.54856,126.79316,10],
+["인천국제 CC","인천 서해구",37.56116,126.65242,9],
+["인천그랜드 CC","인천 서해구",37.51496,126.63876,10],
+["인천환경공단골프장","인천 연수구",37.34936,126.61617,9],
+["인터불고 CC","경북 경산",35.79506,128.75905,196],
+["인터불고 GC(퍼블릭)","강원 원주",37.33051,127.97670,182],
+["일동레이크 GC","경기 포천",37.93083,127.31831,191],
+["일라이트 CC","충북 영동",36.15310,127.79124,190],
+["일레븐 CC","충북 충주",37.09267,127.73731,262],
+["일산스프링힐스 CC","경기 고양",37.65644,126.81206,27],
+["임페리얼레이크 CC","충북 충주",37.02730,127.86891,93],
+["자유 CC","경기 여주",37.20857,127.56786,113],
+["장수골프리조트","전북 장수",35.67845,127.60014,489],
+["잭니클라우스 골프클럽","인천 연수구",37.37919,126.62631,11],
+["전주샹그릴라 CC","전북 임실",35.70460,127.20026,319],
+["정산 컨트리클럽","경남 김해",35.25426,128.80858,201],
+["제이퍼블릭 골프클럽","경기 파주",37.74925,126.84737,46],
+["제일 컨트리클럽","경기 안산",37.32806,126.86868,60],
+["제주 컨트리클럽","제주 제주",33.42942,126.58233,569],
+["제주힐 CC","제주 제주",33.43849,126.60266,519],
+["젠스필드 CC","충북 음성",37.03968,127.51869,147],
+["조아밸리 CC","전남 화순",34.98764,126.93927,175],
+["조일프라자 골프클럽","경기 용인",37.23481,127.15522,181],
+["죽향 CC","전남 담양",35.26711,126.99328,128],
+["중문 골프클럽 (Joong-Moon Country Club)","제주 서귀포",33.24960,126.40539,62],
+["중부 CC","경기 광주",37.33629,127.35116,177],
+["중원 GC","충북 충주",37.06975,127.99154,307],
+["지산 CC","경기 용인",37.21558,127.33213,235],
+["진산 골프클럽","경남 산청",35.27515,127.91132,165],
+["진양밸리 GC","충북 음성",37.03061,127.46513,191],
+["진주 컨트리클럽","경남 진주",35.17428,128.23591,69],
+["창원 컨트리클럽","경남 창원",35.26280,128.66387,169],
+["창평 CC(골프장)","전남 담양",35.22246,127.01452,82],
+["처인 CC","경기 용인",37.17021,127.22073,167],
+["천룡 CC","충북 진천",36.94948,127.38910,227],
+["천안상록 CC","충남 천안",36.74313,127.27997,93],
+["청평마이다스 CC","경기 가평",37.66367,127.45528,225],
+["충성대체력단련장","경북 영천",35.99711,128.99495,164],
+["칠곡아이위시 CC","경북 칠곡",35.94509,128.37389,116],
+["칼레이트 CC","대구 군위",36.21329,128.52436,159],
+["캐슬렉스 제주 CC","제주 서귀포",33.33983,126.35085,431],
+["캐슬렉스서울 GC","경기 하남",37.49811,127.16689,89],
+["캐슬파인 GC","경기 여주",37.30179,127.74445,242],
+["코리아 CC","경기 용인",37.21907,127.15416,223],
+["코리아 CC 퍼블릭코스","경기 용인",37.22360,127.12479,133],
+["코브스윙","경기 포천",37.86396,127.13397,274],
+["코스카 CC","충북 음성",36.93068,127.62374,249],
+["크라운 CC","제주 제주",33.53047,126.69548,52],
+["클럽디거창 CC","경남 거창",35.59304,127.90480,554],
+["클럽디보은 CC","충북 보은",36.50979,127.69168,249],
+["클럽디속리산","충북 보은",36.44647,127.78300,250],
+["클럽모우 CC","강원 홍천",37.69418,127.56633,195],
+["클럽비전힐스 CC","경기 남양주",37.64260,127.26942,333],
+["킹스데일 CC","충북 충주",37.01893,127.81298,178],
+["킹즈락 CC","충북 제천",37.14004,128.17942,381],
+["타미우스 GC","제주 제주",33.35129,126.38849,580],
+["타이거 CC","경기 파주",37.92433,126.89212,119],
+["탑스텐리조트 동강시스타 CC","강원 영월",37.21472,128.51143,258],
+["태광 CC","경기 용인",37.28333,127.08676,118],
+["태기산 CC","강원 평창",37.58519,128.31871,687],
+["태인 컨트리클럽","전북 정읍",35.67994,126.96462,47],
+["테디밸리 골프&리조트","제주 서귀포",33.29010,126.34353,222],
+["통도 파인이스트 컨트리클럽","경남 양산",35.48874,129.09724,164],
+["트리니티클럽","경기 여주",37.20668,127.57547,123],
+["티클라우드 CC","경기 동두천",37.96671,127.08825,285],
+["파나시아 골프클럽","충남 당진",36.88616,126.79125,26],
+["파라지오 컨트리클럽","경북 의성",36.29366,128.55465,94],
+["파미힐스 CC","경북 칠곡",36.00277,128.44293,147],
+["파인리즈 CC","강원 고성",38.24862,128.54254,34],
+["파인밸리 CC","강원 삼척",37.37516,129.20692,93],
+["파인비치골프링크스","전남 해남",34.69781,126.26547,15],
+["파인크리크 CC","경기 안성",37.09178,127.23103,177],
+["파인허스트 골프클럽","충남 아산",36.83992,127.04485,120],
+["파인힐스 CC","전남 순천",35.03725,127.27295,188],
+["파크밸리 GC","강원 원주",37.39336,128.01063,240],
+["팔공 컨트리클럽","대구 동구",35.99084,128.72269,589],
+["페럼클럽","경기 여주",37.20909,127.68386,104],
+["펜타뷰 골프클럽","경북 청도",35.74127,128.85898,252],
+["포도 CC","경북 김천",36.04116,128.05826,110],
+["포라이즌 CC","전남 순천",34.90146,127.44829,182],
+["포레스트 CC","경기 포천",37.87402,127.27135,275],
+["포웰 CC","경남 김해",35.23601,128.78192,68],
+["포천 GC","경기 포천",37.84072,127.23832,421],
+["포천 아도니스 CC","경기 포천",37.96770,127.17143,144],
+["포천힐스 CC","경기 포천",37.88562,127.24174,166],
+["포항 CC","경북 포항",36.22424,129.33620,127],
+["푸른솔 GC 장성","전남 장성",35.25090,126.71348,130],
+["프리스턴벨리 CC","경기 가평",37.65608,127.45371,218],
+["프린세스 GC","충남 공주",36.65259,127.11174,155],
+["플라자 CC 설악","강원 속초",38.21057,128.53777,61],
+["핀크스 GC","제주 서귀포",33.31147,126.38913,411],
+["필그린 GC","충북 청주",36.62249,127.64301,241],
+["필로스 CC","경기 포천",37.93823,127.33119,311],
+["하이원 CC","강원 정선",37.17467,128.84541,1052],
+["한라산 CC","제주 제주",33.43782,126.54652,458],
+["한림광릉 CC(회원제)","경기 남양주",37.75667,127.24219,195],
+["한림안성 CC","경기 안성",37.08547,127.19929,102],
+["한미르대덕 CC","대전 유성구",36.41966,127.40051,43],
+["한성 CC","경기 용인",37.31030,127.11774,112],
+["한양 CC","경기 고양",37.65660,126.85578,82],
+["한양파인 CC","경기 고양",37.65478,126.86686,55],
+["한원 컨트리클럽","경기 용인",37.15927,127.13368,109],
+["한탄강 CC","강원 철원",38.16582,127.29239,190],
+["함평엘리체 CC","전남 함평",35.00443,126.55702,36],
+["함평천지 CC","전남 함평",35.05394,126.50029,91],
+["해병대체력단련장","경기 화성",37.15618,126.93990,78],
+["해비치 CC","경기 남양주",37.61328,127.29908,201],
+["해솔리아 CC","경기 용인",37.20703,127.18879,229],
+["해슬리나인브릿지 CC","경기 여주",37.25348,127.61793,108],
+["해운대 컨트리클럽","부산 기장",35.36541,129.19947,447],
+["해운대비치골프&리조트","부산 기장",35.22477,129.21980,68],
+["해피니스 CC","전남 나주",35.00110,126.83601,94],
+["화산 CC","경기 용인",37.15212,127.23480,166],
+["화성 골프클럽","경기 화성",37.22709,126.83448,51],
+["화성상록 GC","경기 화성",37.19333,127.13349,156],
+["화순 CC","전남 화순",34.97410,126.91066,120],
+["휘닉스평창 CC","강원 평창",37.58750,128.33755,689],
+["휘슬링락 CC","강원 춘천",37.76649,127.67445,216],
+["히든밸리 골프클럽","충북 진천",36.90661,127.30875,281],
+["힐드로사이 CC","강원 홍천",37.59340,127.71142,284]
 ];
+
+// ── 설정 ───────────────────────────────────────────────
+// 세이지우드 현장 관측 온도를 읽어올 중계 주소.
+// 비워두면 필드 온도 표시를 조용히 생략한다.
+//   예) "https://xxx.workers.dev/?url="
+const FIELD_RELAY="https://golf-fild.blue2848k.workers.dev/?url=";
+// 세이지우드 지점 코드. 어느 골프장을 보고 있어도 이 값을 기준 온도로 함께 표시한다.
+const FIELD_SITE="hongcheon";
+const FIELD_TTL=10*60*1000;   // 10분 캐시
+
+// 기상청 단기예보 조회서비스 인증키 (공공데이터포털 > 일반 인증키 Decoding).
+// 비워두면 기상청 비교 표시를 조용히 생략한다.
+const KMA_KEY="5ODVqQSjcPHUAVBGte4vw/GQA+eKM1J8nTn5+E4//mH5mnD4PCoBx9Ash9KTd6FOyl5lGSLJIwLFYvwl2mpeZQ==";
+const KMA_TTL=30*60*1000;     // 30분 캐시 (기상청 발표 주기 3시간)
 
 // ── 상수 ───────────────────────────────────────────────
 const WMO={0:"맑음",1:"대체로 맑음",2:"구름 조금",3:"흐림",45:"안개",48:"안개",51:"가벼운 이슬비",53:"이슬비",55:"강한 이슬비",61:"약한 비",63:"비",65:"강한 비",71:"약한 눈",73:"눈",75:"강한 눈",80:"소나기",81:"강한 소나기",82:"폭우",95:"뇌우",99:"강한 우박"};
@@ -757,6 +679,44 @@ function gi(r,w,t){
   if(s>=40)return{s,l:"보통 😐",bg:"#faf0c0",fg:"#3a3000"};
   return{s,l:"주의 ⚠️",bg:"#fde0d0",fg:"#3a1000"};
 }
+// ── 기상청 체감온도 ────────────────────────────────────
+// 기상청 정의는 일사량(복사열)을 반영하지 않는다. Open-Meteo 의
+// apparent_temperature 는 일사를 포함해 여름철에 3~4°C 높게 나오므로 쓰지 않는다.
+//   · 여름(5~9월) : 습구온도 기반 (2020년 개정식)
+//   · 겨울        : 기온 10°C 이하 + 풍속 1.3m/s(≈4.8km/h) 이상일 때 풍속냉각지수
+//   · 그 밖       : 기온 그대로
+function stullTw(ta,rh){
+  return ta*Math.atan(0.151977*Math.sqrt(rh+8.313659))
+    + Math.atan(ta+rh) - Math.atan(rh-1.676331)
+    + 0.00391838*Math.pow(rh,1.5)*Math.atan(0.023101*rh) - 4.686035;
+}
+function feelTemp(ta,rh,wsKmh,dt){
+  if(ta==null)return null;
+  const m=dt.getMonth()+1;
+  if(m>=5&&m<=9&&rh!=null){
+    const tw=stullTw(ta,rh);
+    return -0.2442 + 0.55399*tw + 0.45535*ta - 0.0022*tw*tw + 0.00278*tw*ta + 3.0;
+  }
+  if(ta<=10&&wsKmh!=null&&wsKmh>=4.8){
+    const v=Math.pow(wsKmh,0.16);
+    return 13.12 + 0.6215*ta - 11.37*v + 0.3965*v*ta;
+  }
+  return ta;
+}
+// 날짜별 체감 최고/최저 (시간별 값에서 산출)
+function feelDaily(hi){
+  const m={};
+  for(let i=0;i<hi.time.length;i++){
+    const dt=new Date(hi.time[i]);
+    const f=feelTemp(hi.temperature_2m[i],hi.relative_humidity_2m?.[i],
+                     hi.windspeed_10m?.[i],dt);
+    if(f==null)continue;
+    const k=hi.time[i].slice(0,10), o=m[k]=m[k]||{mx:-99,mn:99};
+    if(f>o.mx)o.mx=f;
+    if(f<o.mn)o.mn=f;
+  }
+  return m;
+}
 function wd(d){
   const a=["↓","↙","←","↖","↑","↗","→","↘"];
   const n=["북","북동","동","남동","남","남서","서","북서"];
@@ -768,7 +728,163 @@ function dl(t,i){
   const d=new Date(t+"T12:00:00");
   return`${d.getMonth()+1}/${d.getDate()}(${DAYS[d.getDay()]})`;
 }
-function setMain(html){document.getElementById("main").innerHTML=html;}
+// 기상청 시간대별 스트립 (예상 날씨와 같은 시각으로 정렬)
+// 일별 행에 붙는 기상청 비교 한 줄
+// 기상청 일별 최고/최저 배열 (그래프 축 범위 계산용)
+function kmxOf(da){return da.time.map(t=>{const k=kmaDay(t);return k&&k.tmx!=null?k.tmx:null;});}
+function kmnOf(da){return da.time.map(t=>{const k=kmaDay(t);return k&&k.tmn!=null?k.tmn:null;});}
+// null 이 섞인 계열을 끊어진 점선으로 그린다
+function segPolyline(arr,tx,ty,color){
+  let out="",seg=[];
+  const flush=()=>{
+    if(seg.length>1)out+=`<polyline points="${seg.join(" ")}" fill="none" stroke="${color}" stroke-width="1.6" stroke-dasharray="4 3" opacity=".85"/>`;
+    else if(seg.length===1){const [x,y]=seg[0].split(",");out+=`<circle cx="${x}" cy="${y}" r="2.5" fill="none" stroke="${color}" stroke-width="1.4"/>`;}
+    seg=[];
+  };
+  arr.forEach((v,i)=>{ if(v==null){flush();return;} seg.push(`${tx(i)},${ty(v)}`); });
+  flush();
+  return out;
+}
+
+function kmaDayLine(isoDate,da,i){
+  if(!KMA_KEY||!KMA||KMA.error)return "";
+  const k=kmaDay(isoDate);
+  if(!k||(k.tmx==null&&k.tmn==null))return "";
+  const om_x=da.temperature_2m_max?.[i], om_n=da.temperature_2m_min?.[i];
+  const d=(a,b)=>(a==null||b==null)?"":` <span style="opacity:.75">(${(a-b)>0?"+":""}${Math.round((a-b)*10)/10})</span>`;
+  // 기상청이 최고/최저를 직접 발표하지 않은 날은 * 로 구분
+  const mk=v=>v?`<span title="기상청 시간별 값에서 산출" style="opacity:.7">*</span>`:"";
+  return `<div class="dr-kma">🏛️ 기상청 날씨
+    <b>${k.tmx!=null?Math.round(k.tmx)+"°":"–"}</b>${mk(k.tmxD!=null)}${d(k.tmx,om_x)}
+    / <b>${k.tmn!=null?Math.round(k.tmn)+"°":"–"}</b>${mk(k.tmnD!=null)}${d(k.tmn,om_n)}
+    · 💧${k.pop??"–"}%${k.pop!=null&&da.precipitation_probability_max?.[i]!=null?d(k.pop,da.precipitation_probability_max[i]):""}
+    · ${kmaIcon(k.sky,k.pty)} ${kmaDesc(k.sky,k.pty)}</div>`;
+}
+
+// 기상청 시간대별 스트립. 예상 날씨 스트립과 완전히 같은 모양으로 그린다.
+function kmaHourlyStrip(hi,h0,totalH){
+  if(!KMA_KEY)
+    return `<div class="km-warn">🏛️ <b>기상청 날씨</b>가 아직 연결되지 않았습니다.
+      공공데이터포털 인증키를 <code>KMA_KEY</code>에 넣으면 위 예상 날씨와 같은 형태로 표시됩니다.</div>`;
+  if(KMA&&KMA.error)
+    return `<div class="km-warn">🏛️ 기상청 날씨를 불러오지 못했습니다 — ${KMA.error}</div>`;
+  if(!KMA||!KMA.hourly)return "";
+  let cells="",n=0,last="";
+  for(let i=h0;i<totalH;i++){
+    const t=new Date(hi.time[i]),k=kmaAt(t);
+    const ds=`${t.getMonth()+1}/${t.getDate()}`;
+    if(ds!==last){
+      const lbl=i===h0?`오늘 ${ds}(${DAYS[t.getDay()]})`:`${ds}(${DAYS[t.getDay()]})`;
+      cells+=`<div class="day-sep"><div class="day-sep-inner">${lbl}</div></div>`;
+      last=ds;
+    }
+    if(!k){
+      cells+=`<div class="hc"><div class="ht">${t.getHours()===0?"자정":t.getHours()+"시"}</div>
+        <div class="hico" style="opacity:.25">–</div><div class="htemp" style="color:#b8ccb8">–</div>
+        <div class="hrain" style="color:#b8ccb8">–</div><div class="hwind" style="color:#b8ccb8">–</div></div>`;
+      continue;
+    }
+    n++;
+    cells+=`<div class="hc${i===h0?" now":""}">
+      <div class="ht">${t.getHours()===0?"자정":t.getHours()+"시"}${k.src==="초단기"?`<span title="초단기예보" style="color:#1a7a4a">·</span>`:""}</div>
+      <div class="hico">${kmaIcon(k.sky,k.pty)}</div>
+      <div class="htemp">${k.tmp!=null?Math.round(k.tmp)+"°":"–"}</div>
+      <div class="hrain">💧${k.pop??0}%</div>
+      <div class="hwind">💨${k.wsd!=null?Math.round(k.wsd*3.6):"–"}</div>
+    </div>`;
+  }
+  if(!n)return "";
+  const k0=kmaAt(new Date(hi.time[h0]));
+  const obs=KMA.now;
+  const om={t:Math.round(hi.temperature_2m[h0]),p:hi.precipitation_probability?.[h0]??0};
+  const d=(a,b)=>{
+    if(a==null||b==null)return"";
+    const v=Math.round((a-b)*10)/10;
+    if(v===0)return` <span style="color:#7a9a7a">(예상과 동일)</span>`;
+    return` <span style="color:${v>0?"#c04020":"#2060c0"}">(예상 대비 ${v>0?"+":""}${v})</span>`;
+  };
+  const cmp=obs
+    ? `관측 <b>${obs.tmp.toFixed(1)}°</b> (${obs.time})${d(obs.tmp,om.t)} · 강수확률 ${k0&&k0.pop!=null?k0.pop+"%":"–"}${k0&&k0.pop!=null?d(k0.pop,om.p):""} · `
+    : (k0?`현재 ${Math.round(k0.tmp)}°${d(Math.round(k0.tmp),om.t)} · `:"");
+  return `<div class="sec">기상청 날씨 <span style="font-weight:400;text-transform:none;letter-spacing:0">· 실황+초단기+단기 (고도 보정 없음)</span></div>
+    <div class="hscroll"><div class="hrow">${cells}</div></div>
+    <div class="km-note">${cmp}${KMA.base}
+    <br>기상청 발표값을 가공 없이 표시합니다 — 현재는 <b>초단기실황(관측)</b>, 약 6시간까지는 <b>초단기예보</b>, 이후는 <b>단기예보</b>입니다. 5km 격자 기준이라 코스 해발고도(${COURSE.ele}m)는 반영되지 않고, +3일 이후는 자료가 없어 – 로 표시됩니다.</div>`;
+}
+
+let SCROLL_X=0;                       // 재렌더 시 가로 스크롤 위치 보존
+// 로딩 애니메이션 — 골프공이 굴러와 홀에 빠진다 (외부 리소스 없음)
+function golfLoader(){
+  return `<svg class="gload" viewBox="0 0 132 92" role="img" aria-label="불러오는 중">
+    <defs>
+      <linearGradient id="hiG" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#7ec98a"/><stop offset="1" stop-color="#4a9a5e"/>
+      </linearGradient>
+      <!-- 보이는 영역 = (홀 표면보다 위 전체) ∪ (홀 구멍 안).
+           홀 표면 아래로 내려간 부분은 잘려나가 원통 속으로 잠기는 것처럼 보인다. -->
+      <clipPath id="hiClip">
+        <rect x="-60" y="-60" width="260" height="130"/>
+        <ellipse cx="97" cy="70" rx="8.5" ry="3.6"/>
+      </clipPath>
+    </defs>
+    <!-- 그린 -->
+    <ellipse cx="66" cy="74" rx="62" ry="15" fill="url(#hiG)"/>
+    <ellipse cx="66" cy="74" rx="62" ry="15" fill="none" stroke="#3d8450" stroke-width="1" opacity=".5"/>
+    <!-- 홀 -->
+    <ellipse cx="97" cy="70" rx="8.5" ry="3.6" fill="#14301d"/>
+    <ellipse cx="97" cy="69.3" rx="8.5" ry="3.6" fill="#0d2415"/>
+    <!-- 깃대와 깃발 -->
+    <g class="hi-flag">
+      <rect x="96.2" y="26" width="1.7" height="44" rx="0.8" fill="#7a6a4a"/>
+      <path d="M97.9 27 L116 32.5 L97.9 38 Z" fill="#c8402c"/>
+      <path d="M97.9 27 L116 32.5 L97.9 38 Z" fill="none" stroke="#a33322" stroke-width="0.6"/>
+    </g>
+    <!-- 공 그림자 -->
+    <g class="hi-x"><g class="hi-sh">
+      <ellipse cx="8" cy="70" rx="6.4" ry="2.3" fill="#123018"/>
+    </g></g>
+    <!-- 공: 클립 그룹은 변형이 없어야 클립이 화면에 고정된다 -->
+    <g clip-path="url(#hiClip)">
+      <g class="hi-x"><g class="hi-y"><g class="hi-fade"><g class="hi-roll">
+        <circle cx="8" cy="8" r="6.2" fill="#fff" stroke="#2c5a3a" stroke-width="1.3"/>
+        <circle cx="5.8" cy="5.8" r="0.85" fill="#c9d9cd"/>
+        <circle cx="10.2" cy="5.8" r="0.85" fill="#c9d9cd"/>
+        <circle cx="8" cy="9.2" r="0.85" fill="#c9d9cd"/>
+        <circle cx="5.5" cy="10" r="0.7" fill="#d9e5dc"/>
+        <circle cx="10.5" cy="10" r="0.7" fill="#d9e5dc"/>
+        <circle cx="8" cy="4.4" r="0.7" fill="#d9e5dc"/>
+      </g></g></g></g>
+    </g>
+  </svg>`;
+}
+function setMain(html){
+  const el=document.getElementById("main");
+  el.innerHTML=html;
+  // 스크롤 동기화 실패가 화면 렌더링을 막지 않도록 격리
+  try{syncHScroll();}catch(e){}
+}
+// 예상 날씨 / 기상청 날씨 두 스트립을 같이 움직인다.
+function syncHScroll(){
+  const els=Array.prototype.slice.call(document.querySelectorAll(".hscroll"));
+  if(!els.length)return;
+  if(SCROLL_X)els.forEach(e=>{e.scrollLeft=SCROLL_X;});
+  if(els.length<2){
+    els[0].addEventListener("scroll",()=>{SCROLL_X=els[0].scrollLeft;},{passive:true});
+    return;
+  }
+  let lock=false;
+  els.forEach(el=>{
+    el.addEventListener("scroll",()=>{
+      if(lock)return;
+      lock=true;
+      SCROLL_X=el.scrollLeft;
+      els.forEach(o=>{if(o!==el&&o.scrollLeft!==SCROLL_X)o.scrollLeft=SCROLL_X;});
+      // 다음 프레임에 잠금 해제 (되먹임 방지)
+      if(typeof requestAnimationFrame==="function")requestAnimationFrame(()=>{lock=false;});
+      else setTimeout(()=>{lock=false;},0);
+    },{passive:true});
+  });
+}
 function setSlist(html,show){
   const el=document.getElementById("slist");
   el.innerHTML=html;el.style.display=show?"block":"none";
@@ -800,24 +916,98 @@ inp.addEventListener("keyup",()=>{
   else setSlist("",false);
 });
 
-function showSuggestions(q){
-  const results=DB.filter(c=>c[0].includes(q)||c[1].includes(q)).slice(0,10);
-  if(!results.length){setSlist("",false);return;}
-  setSlist(results.map((c,i)=>
-    `<div class="si" onclick="pickFromDB(${DB.indexOf(c)})">
-      <span style="font-weight:500">${highlight(c[0],q)}</span>
-      <span class="si-loc">${c[1]}</span>
-    </div>`
-  ).join(""),true);
+// 검색어/이름 정규화: 공백·점 제거, CC/GC/컨트리클럽 등 접미어 통일
+function nrm(s){
+  return s.toLowerCase()
+    .replace(/[\s.·\-_()]/g,"")
+    .replace(/c\.c|컨트리클럽|컨트리\s*클럽/g,"cc")
+    .replace(/g\.c|골프클럽|골프\s*클럽/g,"gc")
+    .replace(/골프앤리조트|골프&리조트|골프리조트/g,"gr");
+}
+// 접미어까지 떼어낸 핵심 이름 (레이크사이드cc -> 레이크사이드)
+function core(s){return nrm(s).replace(/(cc|gc|gr|골프장|클럽|리조트)/g,"");}
+
+const CHO="ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
+// 한글 문자열의 초성 추출 (세이지우드 -> ㅅㅇㅈㅇㄷ)
+function chosung(s){
+  let o="";
+  for(const ch of s){
+    const c=ch.charCodeAt(0)-0xAC00;
+    if(c>=0&&c<11172)o+=CHO[Math.floor(c/588)];
+    else if(/\S/.test(ch))o+=ch.toLowerCase();
+  }
+  return o;
+}
+function isChoQuery(q){return /^[ㄱ-ㅎ]+$/.test(q.replace(/\s/g,""));}
+
+// 점수가 높은 순으로 후보 인덱스 반환
+function searchDB(raw){
+  const q=(raw||"").trim();
+  if(!q)return[];
+  const nq=nrm(q), cq=core(q), toks=q.split(/\s+/).filter(Boolean).map(nrm).filter(Boolean);
+  const cho=isChoQuery(q)?q.replace(/\s/g,""):null;
+  const out=[];
+  for(let i=0;i<DB.length;i++){
+    const c=DB[i], nName=nrm(c[0]), cName=core(c[0]), nReg=nrm(c[1]);
+    // 별칭(브랜드명·통칭)도 검색 대상에 포함한다
+    const hay=nName+" "+nReg+(c[5]?" "+nrm(c[5]):"");
+    let sc=-1;
+    if(cho){                                      // 초성 검색
+      if(chosung(c[0]).replace(/\s/g,"").includes(cho))sc=45;
+    }
+    else if(cName&&cq&&cName===cq)sc=100;         // 핵심 이름 완전일치
+    else if(nName===nq)sc=98;
+    else if(cName&&cq&&cName.startsWith(cq))sc=90;
+    else if(nName.startsWith(nq))sc=88;
+    else if(nName.includes(nq))sc=75;
+    else if(cName&&cq&&cName.includes(cq))sc=70;
+    else if(cName&&cq&&cq.includes(cName)&&cName.length>=2)sc=68;  // "세이지우드 여수경도" 안에 이름이 들어있는 경우
+    else if(toks.length>1){
+      // 모든 낱말이 맞지 않아도, 맞은 낱말 비율만큼 점수를 준다.
+      // "세이지우드 여수 경도" 처럼 브랜드명이 섞여도 찾을 수 있게 한다.
+      let hit=0;
+      for(const t of toks)if(hay.includes(t))hit++;
+      if(hit)sc=42+Math.round(18*hit/toks.length);
+    }
+    else if(nReg.includes(nq))sc=40;              // 지역명으로 검색
+    if(sc>=0)out.push([sc,-c[4],i]);              // 동점이면 고지대 우선
+  }
+  out.sort((a,b)=>b[0]-a[0]||a[1]-b[1]);
+  return out.slice(0,12).map(r=>r[2]);
 }
 
+function showSuggestions(q){
+  const idx=searchDB(q);
+  if(!idx.length){
+    setSlist(`<div class="si" style="color:#8aa88a;justify-content:center">검색 결과가 없습니다</div>`,true);
+    return;
+  }
+  setSlist(idx.map(i=>{
+    const c=DB[i];
+    return `<div class="si" onclick="pickFromDB(${i})">
+      <span class="si-nm">${highlight(c[0],q)}</span>
+      <span class="si-loc">${c[1]} · ${c[4]}m</span>
+    </div>`;
+  }).join(""),true);
+}
+
+function esc(s){return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");}
 function highlight(name,q){
-  return name.replace(new RegExp(`(${q})`,"g"),'<span style="color:#1a4a2e;font-weight:700">$1</span>');
+  const t=(q||"").trim();
+  if(!t||isChoQuery(t))return name;
+  for(const p of t.split(/\s+/).filter(Boolean)){
+    if(!p)continue;
+    name=name.replace(new RegExp(`(${esc(p)})`,"gi"),
+      '<span style="color:#1a4a2e;font-weight:700">$1</span>');
+  }
+  return name;
 }
 
 function doSearch(){
   const q=inp.value.trim();
   if(!q)return;
+  const idx=searchDB(q);
+  if(idx.length===1){pickFromDB(idx[0]);return;}   // 결과가 하나면 바로 조회
   showSuggestions(q);
 }
 
@@ -827,28 +1017,221 @@ document.addEventListener("click",e=>{
 
 function pickFromDB(i){
   const c=DB[i];
-  COURSE={name:c[0],address:c[1],lat:c[2],lon:c[3]};
+  COURSE={name:c[0],address:c[1],lat:c[2],lon:c[3],ele:c[4]};
   inp.value=c[0];
   setSlist("",false);
+  SCROLL_X=0;
   loadWeather();
+}
+
+// ── 현장 관측 필드 온도 (세이지우드) ────────────────────
+// 어느 골프장을 조회하든 세이지우드 현재 온도를 기준값으로 함께 표시한다.
+let FIELD=null;
+async function loadFieldTemp(){
+  FIELD=null;
+  const site=FIELD_SITE;
+  if(!site||!FIELD_RELAY)return;                 // 중계 주소 없으면 생략
+  const ck="ft_"+site;
+  try{
+    const c=JSON.parse(localStorage.getItem(ck)||"null");
+    if(c&&Date.now()-c.t<FIELD_TTL){FIELD=c.d;return;}
+  }catch(e){}
+  try{
+    const target=`https://www.sagewood.co.kr/api/open/${site}/weather`;
+    const r=await fetch(FIELD_RELAY+encodeURIComponent(target),{cache:"no-store"});
+    if(!r.ok)return;
+    const d=await r.json();
+    if(d&&d.temperature!=null){
+      FIELD={temp:parseFloat(d.temperature),cond:d.weatherCondition||"",
+             time:d.weatherTime||"",hum:d.humidity,pm25:d.pm25,air:d.airQuality};
+      try{localStorage.setItem(ck,JSON.stringify({t:Date.now(),d:FIELD}));}catch(e){}
+    }
+  }catch(e){/* 중계 실패 시 표시 생략 */}
+}
+
+// ── 기상청 단기예보 ────────────────────────────────────
+// 격자 변환: 위경도 → 기상청 동네예보 격자(nx,ny). Lambert Conformal Conic.
+function dfsXy(lat,lon){
+  const RE=6371.00877,GRID=5.0,SLAT1=30.0,SLAT2=60.0,OLON=126.0,OLAT=38.0,XO=43,YO=136;
+  const D=Math.PI/180, re=RE/GRID, s1=SLAT1*D, s2=SLAT2*D, ol=OLON*D, oa=OLAT*D;
+  let sn=Math.tan(Math.PI*0.25+s2*0.5)/Math.tan(Math.PI*0.25+s1*0.5);
+  sn=Math.log(Math.cos(s1)/Math.cos(s2))/Math.log(sn);
+  let sf=Math.tan(Math.PI*0.25+s1*0.5);
+  sf=Math.pow(sf,sn)*Math.cos(s1)/sn;
+  let ro=Math.tan(Math.PI*0.25+oa*0.5);
+  ro=re*sf/Math.pow(ro,sn);
+  let ra=Math.tan(Math.PI*0.25+lat*D*0.5);
+  ra=re*sf/Math.pow(ra,sn);
+  let th=lon*D-ol;
+  if(th>Math.PI)th-=2*Math.PI;
+  if(th<-Math.PI)th+=2*Math.PI;
+  th*=sn;
+  return {nx:Math.floor(ra*Math.sin(th)+XO+0.5), ny:Math.floor(ro-ra*Math.cos(th)+YO+0.5)};
+}
+function ymd(d){return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;}
+// 단기예보 발표시각: 02·05·08·11·14·17·20·23시 (+10분 후 조회 가능)
+function kmaBase(now){
+  const SLOTS=[2,5,8,11,14,17,20,23];
+  const d=new Date(now.getTime());
+  let h=d.getHours();
+  if(d.getMinutes()<15)h-=1;                       // 발표 직후 여유
+  let s=null;
+  for(let i=SLOTS.length-1;i>=0;i--)if(SLOTS[i]<=h){s=SLOTS[i];break;}
+  if(s===null){d.setDate(d.getDate()-1);s=23;}     // 자정~02시는 전일 23시 발표
+  return {date:ymd(d), time:String(s).padStart(2,"0")+"00"};
+}
+// 초단기실황: 매시 정시 발표, 약 40분 뒤 조회 가능
+function kmaNcstBase(now){
+  const d=new Date(now.getTime());
+  if(d.getMinutes()<45)d.setHours(d.getHours()-1);
+  return {date:ymd(d),time:String(d.getHours()).padStart(2,"0")+"00"};
+}
+// 초단기예보: 매시 30분 발표, 약 45분 뒤 조회 가능
+function kmaSrtBase(now){
+  const d=new Date(now.getTime()-45*60*1000);
+  return {date:ymd(d),time:String(d.getHours()).padStart(2,"0")+"30"};
+}
+const KSKY={"1":"맑음","3":"구름많음","4":"흐림"};
+const KSKY_IC={"1":"☀️","3":"⛅","4":"☁️"};
+const KPTY={"0":"","1":"비","2":"비/눈","3":"눈","4":"소나기","5":"빗방울","6":"빗방울눈날림","7":"눈날림"};
+const KPTY_IC={"1":"🌧️","2":"🌨️","3":"❄️","4":"🌦️","5":"🌦️","6":"🌨️","7":"❄️"};
+function kmaDesc(sky,pty){
+  if(pty&&pty!=="0")return KPTY[pty]||"";
+  return KSKY[sky]||"";
+}
+function kmaIcon(sky,pty){
+  if(pty&&pty!=="0")return KPTY_IC[pty]||"🌧️";
+  return KSKY_IC[sky]||"🌡️";
+}
+
+let KMA=null;
+// {hourly:{"YYYYMMDDHH":{tmp,pop,sky,pty,wsd,reh,src}}, daily:{...}, now:{...}, base, nx, ny}
+//
+// 기상청은 구간별로 다른 API 를 쓴다. 하나만 쓰면 값이 크게 틀린다.
+//   현재      → 초단기실황 getUltraSrtNcst (관측값, T1H)
+//   +6시간까지 → 초단기예보 getUltraSrtFcst (T1H, 1시간 단위)
+//   +3일까지   → 단기예보  getVilageFcst  (TMP, 강수확률 POP 는 이것만 제공)
+// 초단기 자료가 있는 시각은 초단기가 단기예보를 덮어쓴다.
+const KMA_BASE_URL="https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/";
+async function kmaFetch(op,params){
+  const q=new URLSearchParams({serviceKey:KMA_KEY,pageNo:"1",numOfRows:"1000",dataType:"JSON",...params});
+  const r=await fetch(KMA_BASE_URL+op+"?"+q.toString());
+  if(!r.ok)throw new Error(op+" HTTP "+r.status);
+  const j=await r.json();
+  const it=j?.response?.body?.items?.item;
+  if(!it)throw new Error(j?.response?.header?.resultMsg
+      ||j?.OpenAPI_ServiceResponse?.cmmMsgHeader?.returnAuthMsg||op+" 응답 없음");
+  return Array.isArray(it)?it:[it];
+}
+
+async function loadKma(){
+  KMA=null;
+  if(!KMA_KEY)return;
+  const {nx,ny}=dfsXy(COURSE.lat,COURSE.lon);
+  const now=new Date();
+  const vb=kmaBase(now), nb=kmaNcstBase(now), sb=kmaSrtBase(now);
+  const ck=`kma3_${nx}_${ny}_${sb.date}${sb.time}`;
+  try{
+    const c=JSON.parse(localStorage.getItem(ck)||"null");
+    if(c&&Date.now()-c.t<KMA_TTL){KMA=c.d;return;}
+  }catch(e){}
+
+  const P={nx:String(nx),ny:String(ny)};
+  const [vil,srt,ncst]=await Promise.all([
+    kmaFetch("getVilageFcst",{...P,base_date:vb.date,base_time:vb.time}).catch(e=>({e})),
+    kmaFetch("getUltraSrtFcst",{...P,base_date:sb.date,base_time:sb.time}).catch(e=>({e})),
+    kmaFetch("getUltraSrtNcst",{...P,base_date:nb.date,base_time:nb.time}).catch(e=>({e})),
+  ]);
+  if(vil.e&&srt.e&&ncst.e){KMA={error:(vil.e.message||"조회 실패")};return;}
+
+  const hourly={},daily={};
+  const put=(k,f,v,srcTag)=>{
+    const h=hourly[k]=hourly[k]||{};
+    if(h[f]==null||h.src!=="초단기"||srcTag==="초단기"){h[f]=v;}
+    if(srcTag==="초단기")h.src="초단기"; else if(!h.src)h.src="단기";
+  };
+  // 단기예보 먼저 (넓은 범위)
+  if(Array.isArray(vil))for(const it of vil){
+    const k=it.fcstDate+String(it.fcstTime).padStart(4,"0").slice(0,2), v=it.fcstValue;
+    switch(it.category){
+      case "TMP": put(k,"tmp",parseFloat(v),"단기"); break;
+      case "POP": put(k,"pop",parseInt(v,10),"단기"); break;
+      case "SKY": put(k,"sky",String(v),"단기"); break;
+      case "PTY": put(k,"pty",String(v),"단기"); break;
+      case "WSD": put(k,"wsd",parseFloat(v),"단기"); break;
+      case "REH": put(k,"reh",parseInt(v,10),"단기"); break;
+      case "TMN": (daily[it.fcstDate]=daily[it.fcstDate]||{}).tmn=parseFloat(v); break;
+      case "TMX": (daily[it.fcstDate]=daily[it.fcstDate]||{}).tmx=parseFloat(v); break;
+    }
+  }
+  // 초단기예보로 덮어쓰기 (+6시간). 강수확률(POP)은 초단기에 없으므로 단기예보 값을 유지한다.
+  if(Array.isArray(srt))for(const it of srt){
+    const k=it.fcstDate+String(it.fcstTime).padStart(4,"0").slice(0,2), v=it.fcstValue;
+    switch(it.category){
+      case "T1H": put(k,"tmp",parseFloat(v),"초단기"); break;
+      case "SKY": put(k,"sky",String(v),"초단기"); break;
+      case "PTY": put(k,"pty",String(v),"초단기"); break;
+      case "WSD": put(k,"wsd",parseFloat(v),"초단기"); break;
+      case "REH": put(k,"reh",parseInt(v,10),"초단기"); break;
+    }
+  }
+  // 초단기실황 = 현재 관측값
+  let obs=null;
+  if(Array.isArray(ncst)){
+    const m={};
+    for(const it of ncst)m[it.category]=it.obsrValue;
+    if(m.T1H!=null)obs={tmp:parseFloat(m.T1H),reh:m.REH!=null?parseInt(m.REH,10):null,
+      wsd:m.WSD!=null?parseFloat(m.WSD):null,pty:m.PTY!=null?String(m.PTY):null,
+      rn1:m.RN1!=null?parseFloat(m.RN1):null,
+      time:`${nb.time.slice(0,2)}시 관측`};
+  }
+  // 일별 보강
+  for(const k in hourly){
+    const d=k.slice(0,8), h=hourly[k], dd=(daily[d]=daily[d]||{});
+    if(h.pop!=null)dd.pop=Math.max(dd.pop??0,h.pop);
+    if(h.wsd!=null)dd.wsd=Math.max(dd.wsd??0,h.wsd);
+    if(k.slice(8)==="15"){dd.sky=h.sky;dd.pty=h.pty;}
+    if(dd.sky==null&&h.sky!=null){dd.sky=h.sky;dd.pty=h.pty;}
+    // 기상청이 TMX/TMN 을 주지 않는 날은 기상청 시간별 값에서 산출 (파생값 * 표시)
+    if(dd.tmx==null&&h.tmp!=null){dd.tmx=Math.max(dd.tmxD??-99,h.tmp);dd.tmxD=dd.tmx;}
+    if(dd.tmn==null&&h.tmp!=null){dd.tmn=Math.min(dd.tmnD??99,h.tmp);dd.tmnD=dd.tmn;}
+  }
+  if(!Object.keys(hourly).length&&!obs){KMA={error:"기상청 자료 없음"};return;}
+  KMA={hourly,daily,now:obs,nx,ny,
+       base:`단기 ${vb.date.slice(4,6)}/${vb.date.slice(6,8)} ${vb.time.slice(0,2)}시 · 초단기 ${sb.time.slice(0,2)}:30 발표`};
+  try{localStorage.setItem(ck,JSON.stringify({t:Date.now(),d:KMA}));}catch(e){}
+}
+
+// 로컬시각 → 기상청 키 (YYYYMMDDHH)
+function kmaKeyOf(dt){
+  return `${dt.getFullYear()}${String(dt.getMonth()+1).padStart(2,"0")}${String(dt.getDate()).padStart(2,"0")}${String(dt.getHours()).padStart(2,"0")}`;
+}
+function kmaAt(dt){return KMA&&KMA.hourly?KMA.hourly[kmaKeyOf(dt)]:null;}
+function kmaDay(isoDate){
+  if(!KMA||!KMA.daily)return null;
+  return KMA.daily[isoDate.replace(/-/g,"")]||null;
 }
 
 // ── 날씨 조회 ──────────────────────────────────────────
 async function loadWeather(){
-  setMain(`<div class="loader"><span class="spin">🌀</span><p style="font-size:15px;font-weight:500">${COURSE.name}</p><p style="font-size:13px;color:#7a9a7a;margin-top:4px">날씨 불러오는 중...</p></div>`);
+  setMain(`<div class="loader">${golfLoader()}<p class="ld-nm">${COURSE.name}</p><p class="ld-sub">날씨 불러오는 중...</p></div>`);
   TAB="hourly";OPEN=-1;
   try{
     const url=`https://api.open-meteo.com/v1/forecast?`+
       `latitude=${COURSE.lat}&longitude=${COURSE.lon}`+
-      `&hourly=temperature_2m,apparent_temperature,precipitation_probability,weathercode,windspeed_10m,winddirection_10m,uv_index`+
+      `&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,weathercode,windspeed_10m,winddirection_10m,uv_index`+
       `&daily=weathercode,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,`+
       `precipitation_sum,precipitation_probability_max,windspeed_10m_max,winddirection_10m_dominant,sunrise,sunset,uv_index_max`+
-      `&timezone=Asia%2FSeoul&forecast_days=16&wind_speed_unit=kmh`;
+      `&timezone=Asia%2FSeoul&forecast_days=16&wind_speed_unit=kmh`+
+      // 코스 해발고도를 넘겨 기온을 고도 보정한다 (약 -0.65°C/100m)
+      (COURSE.ele!=null?`&elevation=${COURSE.ele}`:``);
     const r=await fetch(url);
     if(!r.ok)throw new Error("날씨 서버 오류 ("+r.status+")");
     W=await r.json();
     if(!W.hourly||!W.daily||!Array.isArray(W.hourly.time))throw new Error("데이터 형식 오류");
     render();
+    await Promise.all([loadFieldTemp(),loadKma()]);
+    if(FIELD||KMA)render();
   }catch(e){
     setMain(`<div style="padding:4px"><div class="errmsg">
       ⚠️ 날씨를 불러오지 못했습니다.<br>
@@ -863,12 +1246,15 @@ async function loadWeather(){
 function render(){
   if(!W)return;
   const hi=W.hourly,da=W.daily;
+  const FD=feelDaily(hi);   // 기상청식 체감 일별 최고/최저
   const now=new Date();
   let h0=hi.time.findIndex(t=>new Date(t)>=now);
   if(h0<0)h0=0;
   const cur={
     temp:Math.round(hi.temperature_2m[h0]),
-    feel:Math.round(hi.apparent_temperature[h0]),
+    feel:Math.round(feelTemp(hi.temperature_2m[h0],hi.relative_humidity_2m?.[h0],
+                             hi.windspeed_10m?.[h0],new Date(hi.time[h0]))),
+    hum:hi.relative_humidity_2m?.[h0],
     rain:hi.precipitation_probability?.[h0]??0,
     wind:Math.round(hi.windspeed_10m?.[h0]??0),
     wdir:hi.winddirection_10m?.[h0]??0,
@@ -878,12 +1264,14 @@ function render(){
   const g=gi(cur.rain,cur.wind,cur.temp);
   const now2=new Date();
   const updated=`${now2.getHours()}:${String(now2.getMinutes()).padStart(2,"0")} 기준`;
+  const stamp=`${now2.getMonth()+1}월 ${now2.getDate()}일(${DAYS[now2.getDay()]}) ${now2.getHours()}시 현재`;
 
   let html=`
 <div id="curCard">
-  <div class="cloc">📍 ${COURSE.name} · ${COURSE.address}</div>
+  <div class="cloc"><span class="cnm">📍 ${COURSE.name}</span><span class="cloc-r">${COURSE.address}</span></div>
+  <div class="cstamp">${stamp}<span style="font-weight:400;opacity:.8">${COURSE.ele!=null?` · 해발 ${COURSE.ele}m 보정`:""}</span></div>
   <div class="crow">
-    <div><div class="btemp">${cur.temp}°</div><div class="feel">체감 ${cur.feel}° · ${WMO[cur.wc]||""}</div></div>
+    <div><div class="btlabel">현재온도</div><div class="btemp">${cur.temp}°</div><div class="feel">체감 ${cur.feel}°${FIELD?` · <b style="font-weight:700">세이지우드홍천현장실측온도 ${FIELD.temp.toFixed(1)}°</b>`:""} · ${WMO[cur.wc]||""}</div></div>
     <div class="wico">${WIC[cur.wc]||"🌡️"}</div>
   </div>
   <div class="meta4">
@@ -892,7 +1280,7 @@ function render(){
     <div class="mi"><div class="mi-v" style="font-size:12px">${wd(cur.wdir)}</div><div class="mi-l">🧭풍향</div></div>
     <div class="mi"><div class="mi-v">${cur.uv!=null?cur.uv.toFixed(1):"-"}</div><div class="mi-l">☀️UV</div></div>
   </div>
-  <div style="margin-top:10px;font-size:11px;opacity:.55;text-align:right">${updated} 갱신</div>
+  <div style="margin-top:10px;font-size:11px;opacity:.55;text-align:right">${FIELD?`세이지우드 현장관측 ${FIELD.time} · `:""}예보 Open-Meteo · ${updated} 갱신</div>
 </div>
 <div id="gibox" style="background:${g.bg};color:${g.fg}">
   <div class="gi-n">${g.s}</div>
@@ -909,12 +1297,12 @@ function render(){
   if(TAB==="hourly"){
     const totalH=Math.min(h0+72,hi.time.length);
     let lastDate="";
-    html+=`<div class="sec">시간대별 · 최대 72시간</div><div id="hscroll"><div id="hrow">`;
+    html+=`<div class="sec">예상 날씨 (고도 반영) · 시간대별 최대 72시간</div><div class="hscroll"><div class="hrow">`;
     for(let i=h0;i<totalH;i++){
       const t=new Date(hi.time[i]),hr=t.getHours();
       const ds=`${t.getMonth()+1}/${t.getDate()}`;
       if(ds!==lastDate){
-        const lbl=i===h0?"오늘":`${ds}(${DAYS[t.getDay()]})`;
+        const lbl=i===h0?`오늘 ${ds}(${DAYS[t.getDay()]})`:`${ds}(${DAYS[t.getDay()]})`;
         html+=`<div class="day-sep"><div class="day-sep-inner">${lbl}</div></div>`;
         lastDate=ds;
       }
@@ -927,11 +1315,14 @@ function render(){
       </div>`;
     }
     html+=`</div></div>`;
+    html+=kmaHourlyStrip(hi,h0,totalH);
   }
 
   // 16일 예보
   if(TAB==="daily"){
-    html+=`<div class="sec">16일 예보 (클릭 시 상세)</div>`;
+    html+=`<div class="sec">예상 날씨 (고도 반영) · 일별 예보 (클릭 시 상세)</div>`;
+    if(KMA_KEY&&KMA&&!KMA.error)
+      html+=`<div class="km-note" style="margin:-4px 0 8px">각 줄 아래 🏛️ 는 기상청 날씨(+3일)입니다.</div>`;
     da.time.forEach((t,i)=>{
       const dt=new Date(t+"T12:00:00");
       const dc=dt.getDay()===0?"#c02020":dt.getDay()===6?"#2060c0":"#1a2e1a";
@@ -948,8 +1339,9 @@ function render(){
           <div class="dr-rain">💧${da.precipitation_probability_max?.[i]??0}%</div>
           <div class="dr-temps">${Math.round(da.temperature_2m_max?.[i]??0)}°<br><span class="dr-lo">${Math.round(da.temperature_2m_min?.[i]??0)}°</span></div>
         </div>
+        ${kmaDayLine(t,da,i)}
         <div class="dd${isOpen?" show":""}">
-          <div><div class="ddi-l">체감 최고/최저</div><div class="ddi-v">${Math.round(da.apparent_temperature_max?.[i]??0)}° / ${Math.round(da.apparent_temperature_min?.[i]??0)}°</div></div>
+          <div><div class="ddi-l">체감 최고/최저</div><div class="ddi-v">${FD[t]?Math.round(FD[t].mx)+"° / "+Math.round(FD[t].mn)+"°":"–"}</div></div>
           <div><div class="ddi-l">강수량</div><div class="ddi-v">${(da.precipitation_sum?.[i]??0).toFixed(1)} mm</div></div>
           <div><div class="ddi-l">최대 풍속</div><div class="ddi-v">${Math.round(da.windspeed_10m_max?.[i]??0)} km/h</div></div>
           <div><div class="ddi-l">풍향</div><div class="ddi-v">${wd(da.winddirection_10m_dominant?.[i]??0)}</div></div>
@@ -967,7 +1359,9 @@ function render(){
       const d=new Date(t+"T12:00:00");return`${d.getMonth()+1}/${d.getDate()}`;
     });
     const bw=34,gap=5,pw=da.time.length*(bw+gap)+8;
-    const maxT=Math.max(...da.temperature_2m_max),minT=Math.min(...da.temperature_2m_min),tR=maxT-minT||1;
+    const kAll=[].concat(da.temperature_2m_max,da.temperature_2m_min,
+      kmxOf(da),kmnOf(da)).filter(v=>v!=null);
+    const maxT=Math.max(...kAll),minT=Math.min(...kAll),tR=maxT-minT||1;
     const svgH=110,pad=16;
     const tx=i=>i*(bw+gap)+bw/2+4;
     const ty=v=>svgH-pad-((v-minT)/tR)*(svgH-pad*2);
@@ -975,22 +1369,36 @@ function render(){
     const minPts=da.temperature_2m_min.map((v,i)=>`${tx(i)},${ty(v)}`).join(" ");
     const maxW=Math.max(...da.windspeed_10m_max)||1;
 
-    html+=`<div class="chart-card"><div class="chart-t">💧 강수 확률 (%)</div>
+    // 기상청 일별 값 (없는 날은 null)
+    const kmx=da.time.map(t=>{const k=kmaDay(t);return k&&k.tmx!=null?k.tmx:null;});
+    const kmn=da.time.map(t=>{const k=kmaDay(t);return k&&k.tmn!=null?k.tmn:null;});
+    const kpop=da.time.map(t=>{const k=kmaDay(t);return k&&k.pop!=null?k.pop:null;});
+    const hasK=KMA_KEY&&KMA&&!KMA.error&&kmx.some(v=>v!=null);
+    html+=`<div class="chart-card"><div class="chart-t">💧 강수 확률 (%)${hasK?` <span style="font-weight:400;color:#1a5a9a">· 진한 막대 = 기상청 날씨</span>`:""}</div>
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
     <div class="bar-wrap" style="width:${pw}px">`;
     da.precipitation_probability_max.forEach((v,i)=>{
-      html+=`<div class="bw"><div class="bv" style="color:#2060b0">${v??0}%</div><div class="bar" style="height:${Math.max(3,v??0)}px;background:#3080d0"></div><div class="bl">${labs[i]}</div></div>`;
+      const kv=kpop[i];
+      html+=`<div class="bw"><div class="bv" style="color:#2060b0">${v??0}%${kv!=null?`<span style="color:#0a3a6a">/${kv}</span>`:""}</div>
+        <div style="display:flex;align-items:flex-end;gap:2px">
+          <div class="bar" style="width:${kv!=null?13:28}px;height:${Math.max(3,v??0)}px;background:#3080d0"></div>
+          ${kv!=null?`<div class="bar" style="width:13px;height:${Math.max(3,kv)}px;background:#0a3a6a"></div>`:""}
+        </div>
+        <div class="bl">${labs[i]}</div></div>`;
     });
     html+=`</div></div></div>`;
 
     html+=`<div class="chart-card"><div class="chart-t">🌡️ 기온 (°C)</div>
     <div style="display:flex;gap:12px;font-size:12px;margin-bottom:8px;color:#5a7a5a">
       <span><span style="color:#c03020">●</span> 최고</span><span><span style="color:#2060c0">●</span> 최저</span>
+      ${hasK?`<span style="color:#1a5a9a">┈ 기상청 날씨</span>`:""}
     </div>
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
     <svg width="${pw}" height="${svgH}" viewBox="0 0 ${pw} ${svgH}" style="overflow:visible;display:block">
       <polyline points="${maxPts}" fill="none" stroke="#c03020" stroke-width="2" stroke-linejoin="round"/>
       <polyline points="${minPts}" fill="none" stroke="#2060c0" stroke-width="2" stroke-linejoin="round"/>
+      ${hasK?segPolyline(kmx,tx,ty,"#c03020"):""}
+      ${hasK?segPolyline(kmn,tx,ty,"#2060c0"):""}
       ${da.temperature_2m_max.map((v,i)=>`<circle cx="${tx(i)}" cy="${ty(v)}" r="3" fill="#c03020"/><text x="${tx(i)}" y="${ty(v)-6}" text-anchor="middle" font-size="9" fill="#c03020">${Math.round(v)}°</text>`).join("")}
       ${da.temperature_2m_min.map((v,i)=>`<circle cx="${tx(i)}" cy="${ty(v)}" r="3" fill="#2060c0"/><text x="${tx(i)}" y="${ty(v)+13}" text-anchor="middle" font-size="9" fill="#2060c0">${Math.round(v)}°</text>`).join("")}
     </svg>
@@ -1012,6 +1420,83 @@ function render(){
 
 function setTab(t){TAB=t;render();}
 function toggleDay(i){OPEN=OPEN===i?-1:i;render();}
+
+// ── 홈 화면 앱(PWA) ────────────────────────────────────
+// 서비스 워커: 오프라인 표시 + 설치 요건 충족. file:// 로 열면 등록되지 않는다.
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("sw.js").catch(()=>{});
+  });
+}
+
+// 기기·브라우저별로 홈 화면 추가 방법이 달라 안내를 나눠 띄운다.
+let INSTALL_EVT=null;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();INSTALL_EVT=e;showPwaBar();});
+
+function pwaEnv(){
+  const ua=navigator.userAgent;
+  const standalone=window.matchMedia("(display-mode: standalone)").matches
+    ||window.navigator.standalone===true;
+  return {
+    standalone,
+    ios:/iPad|iPhone|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1),
+    inApp:/KAKAOTALK|FB_IAB|FBAN|Instagram|Line\/|NAVER\(inapp/i.test(ua),
+    kakao:/KAKAOTALK/i.test(ua)
+  };
+}
+
+function showPwaBar(){
+  const el=document.getElementById("pwaBar");
+  if(!el)return;
+  const E=pwaEnv();
+  if(E.standalone)return;                               // 이미 앱으로 실행 중
+  try{ if(localStorage.getItem("pwaHide")==="1"&&!E.inApp)return; }catch(e){}
+
+  let html="";
+  if(E.inApp){
+    // 카카오톡·페이스북 등 인앱 브라우저에서는 홈 화면 추가가 불가능하다.
+    html=`📱 <b>홈 화면에 추가하려면 기본 브라우저로 열어야 합니다.</b><br>
+      카카오톡 같은 앱 안의 브라우저에서는 추가 기능이 없습니다.
+      <div class="pw-row">
+        ${E.kakao?`<button class="pw-go" onclick="pwaOpenExternal()">기본 브라우저로 열기</button>`:""}
+        <span style="font-size:12px;opacity:.8">또는 우측 하단 ⋯ → ‘다른 브라우저로 열기’</span>
+      </div>`;
+  }else if(INSTALL_EVT){
+    html=`📱 <b>홈 화면에 추가하면 앱처럼 쓸 수 있습니다.</b>
+      <div class="pw-row">
+        <button class="pw-go" onclick="pwaInstall()">홈 화면에 추가</button>
+        <button class="pw-x" onclick="pwaDismiss()">나중에</button>
+      </div>`;
+  }else if(E.ios){
+    html=`📱 <b>홈 화면에 추가하면 앱처럼 쓸 수 있습니다.</b><br>
+      아래 <b>공유</b> 버튼 <span style="font-size:15px">􀈂</span> 을 누르고
+      <b>‘홈 화면에 추가’</b> 를 선택하세요.
+      <div class="pw-row"><button class="pw-x" onclick="pwaDismiss()">닫기</button></div>`;
+  }else{
+    html=`📱 <b>홈 화면에 추가하면 앱처럼 쓸 수 있습니다.</b><br>
+      브라우저 메뉴에서 <b>‘홈 화면에 추가’</b> 또는 <b>‘앱 설치’</b> 를 선택하세요.
+      <div class="pw-row"><button class="pw-x" onclick="pwaDismiss()">닫기</button></div>`;
+  }
+  el.innerHTML=html;
+  el.style.display="block";
+}
+
+function pwaInstall(){
+  if(!INSTALL_EVT)return;
+  INSTALL_EVT.prompt();
+  INSTALL_EVT.userChoice.finally(()=>{INSTALL_EVT=null;pwaDismiss();});
+}
+function pwaDismiss(){
+  try{localStorage.setItem("pwaHide","1");}catch(e){}
+  const el=document.getElementById("pwaBar");
+  if(el)el.style.display="none";
+}
+// 카카오톡 인앱 브라우저 → 기기 기본 브라우저로 탈출
+function pwaOpenExternal(){
+  const u=location.href;
+  location.href="kakaotalk://web/openExternal?url="+encodeURIComponent(u);
+}
+showPwaBar();
 </script>
 
 
