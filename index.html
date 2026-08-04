@@ -787,6 +787,7 @@ function dl(t,i){
 // 기상청 일별 최고/최저 배열 (그래프 축 범위 계산용)
 function kmxOf(da){return da.time.map(t=>{const k=kmaDay(t);return k&&k.tmx!=null?k.tmx:null;});}
 function kmnOf(da){return da.time.map(t=>{const k=kmaDay(t);return k&&k.tmn!=null?k.tmn:null;});}
+
 // null 이 섞인 계열을 끊어진 점선으로 그린다
 function segPolyline(arr,tx,ty,color){
   let out="",seg=[];
@@ -841,17 +842,16 @@ function airDayLine(isoDate){
 
 function kmaDayLine(isoDate,da,i,D){
   if(!KMA_KEY||!KMA||KMA.error)return "";
-  // 단기 구간은 위 표시값이 곧 기상청 발표값이라 중복이므로 표시하지 않는다
-  if(D&&D.useSht)return "";
+
   const k=kmaDay(isoDate);
   if(!k||(k.tmx==null&&k.tmn==null))return "";
   // 중기 구간은 위 예상값이 이미 이 기상청 값에서 나왔으므로 차이 대신 보정량을 보여준다
-  if(D&&D.useMid){
+  if(D&&(D.useMid||D.useSht)){
     const a=D.adj;
-    return `<div class="dr-kma">🏛️ 기상청 <span class="dr-lbl" style="color:#7a8aaa">중기·발표값</span>
+    return `<div class="dr-kma">🏛️ 기상청 <span class="dr-lbl" style="color:#7a8aaa">${D.useMid?"중기":"단기"}·발표값</span>
       <span class="dr-lbl">최고</span><b>${Math.round(k.tmx)}°</b>
       <span class="dr-lbl">최저</span><b>${k.tmn!=null?Math.round(k.tmn)+"°":"–"}</b>
-      · 💧${k.pop??"–"}% · ${midIcon(k.wf)} ${k.wf||""}
+      · 💧${k.pop??"–"}% · ${D.useMid?`${midIcon(k.wf)} ${k.wf||""}`:`${kmaIcon(k.sky,k.pty)} ${kmaDesc(k.sky,k.pty)}`}
       <span style="opacity:.8">→ 코스 해발 ${COURSE.ele}m 보정 ${a>=0?"+":""}${a.toFixed(1)}°</span></div>`;
   }
   const om_x=da.temperature_2m_max?.[i], om_n=da.temperature_2m_min?.[i];
@@ -873,13 +873,16 @@ function kmaDayLine(isoDate,da,i,D){
 // 기상청 5km 격자값에는 그 격자의 지형 고도가 이미 반영되어 있으므로 추가 보정은 하지 않는다.
 function unifiedHourly(hi,h0,totalH){
   const out=[];
+  const adj=shtTempAdj();
   for(let i=h0;i<totalH;i++){
     const t=new Date(hi.time[i]);
     const k=kmaAt(t);
     const useK=!!(k&&k.tmp!=null);
     out.push({
       t,i,iso:hi.time[i],
-      tmp:useK?k.tmp:hi.temperature_2m[i],
+      raw:useK?k.tmp:null,        // 기상청 발표값(고도 미보정)
+      adj:useK?adj:0,
+      tmp:useK?k.tmp+adj:hi.temperature_2m[i],
       pop:(useK&&k.pop!=null)?k.pop:(hi.precipitation_probability?.[i]??0),
       wind:(useK&&k.wsd!=null)?k.wsd*3.6:(hi.windspeed_10m?.[i]??0),
       wdir:(useK&&k.vec!=null)?k.vec:(hi.winddirection_10m?.[i]??0),
@@ -1210,6 +1213,16 @@ async function kmaFetch(op,params){
 // 중기예보 관측지점의 해발고도 (기상청 예보구역정보 좌표 기준, 121개)
 const MID_ELE={"11B20101":49,"11B20102":41,"11B20201":50,"11B20202":23,"11B20203":11,"11B20204":22,"11B20302":24,"11B20304":56,"11B20305":10,"11B20401":76,"11B20403":99,"11B20404":112,"11B20502":67,"11B20503":46,"11B20504":474,"11B20601":36,"11B20603":25,"11B20604":35,"11B20605":55,"11B20606":19,"11B20609":63,"11B20611":35,"11B20612":97,"11B20701":78,"11B20702":46,"11B20703":50,"11C10101":112,"11C10102":72,"11C10103":156,"11C10201":269,"11C10301":55,"11C10302":184,"11C10304":72,"11C10402":178,"11C20102":38,"11C20103":21,"11C20201":50,"11C20301":52,"11C20302":24,"11C20401":57,"11C20403":176,"11C20404":59,"11C20501":18,"11C20602":13,"11D10101":149,"11D10201":227,"11D10301":102,"11D10302":212,"11D10401":130,"11D10402":131,"11D10501":206,"11D10502":312,"11D10503":298,"11D20201":846,"11D20301":690,"11D20401":14,"11D20402":34,"11D20403":24,"11D20501":46,"11D20602":9,"11F10201":44,"11F10202":24,"11F10203":41,"11F10204":35,"11F10301":423,"11F10302":189,"11F10303":297,"11F10401":107,"11F10402":235,"11F10403":90,"11F20302":25,"11F20303":35,"11F20401":9,"11F20402":23,"11F20404":160,"11F20405":73,"11F20501":44,"11F20502":49,"11F20503":72,"11F20504":52,"11F20505":84,"11F20602":69,"11G00101":10,"11G00201":100,"11G00401":52,"11G00501":56,"11G00901":376,"11G01001":244,"11H10101":14,"11H10102":38,"11H10201":5,"11H10202":43,"11H10301":84,"11H10302":62,"11H10401":211,"11H10501":99,"11H10601":80,"11H10602":58,"11H10604":62,"11H10701":44,"11H10702":118,"11H10703":51,"11H10704":92,"11H10705":35,"11H10707":110,"11H20101":7,"11H20102":6,"11H20301":32,"11H20304":7,"11H20401":35,"11H20402":18,"11H20403":40,"11H20404":14,"11H20405":33,"11H20502":203,"11H20601":26,"11H20602":51,"11H20603":16,"11H20604":66,"11H20701":32,"11H20703":115};
 const LAPSE_PER_M=0.0065;   // 표준 기온감률 0.65°C/100m
+// 단기·초단기예보 격자의 중심 지형고도 (378개 격자).
+// 격자값에는 그 격자의 평균 지형고도가 이미 들어있으므로, 코스 고도와의 차이만 보정한다.
+// (전국 474곳 중위 보정폭 -0.1°C — 대부분 미세하고 고산 코스에서만 커진다)
+const GRID_ELE={"100_77":169,"100_78":105,"100_80":498,"100_82":52,"101_78":0,"101_82":93,"101_87":232,"101_90":114,"101_91":119,"101_92":94,"102_101":84,"102_113":159,"102_97":76,"102_99":70,"103_87":246,"103_88":246,"104_85":106,"105_89":0,"46_108":58,"47_35":30,"48_34":137,"48_64":30,"49_108":-2,"49_129":259,"49_33":133,"49_34":319,"50_32":0,"50_33":209,"50_34":457,"50_35":533,"50_70":0,"50_79":0,"51_114":1,"51_124":7,"51_125":40,"51_65":1,"51_70":11,"52_130":4,"52_37":252,"52_72":104,"52_77":26,"52_82":2,"53_119":2,"53_122":0,"53_126":0,"53_37":288,"53_71":48,"53_72":40,"53_99":3,"54_100":150,"54_122":3,"54_123":2,"54_126":9,"54_127":17,"54_34":315,"54_36":814,"54_37":385,"54_70":30,"54_76":74,"54_82":136,"54_90":0,"55_34":253,"55_37":489,"56_118":3,"56_122":5,"56_123":4,"56_35":298,"56_38":166,"56_39":31,"56_68":121,"56_73":26,"56_76":109,"56_80":87,"57_100":181,"57_112":20,"57_119":28,"57_126":15,"57_129":16,"57_35":141,"57_36":221,"57_61":0,"57_68":285,"57_74":18,"57_80":115,"58_110":26,"58_114":5,"58_117":21,"58_122":30,"58_128":13,"58_129":72,"58_130":93,"58_131":155,"58_132":117,"58_134":332,"58_35":92,"58_71":211,"58_82":79,"59_111":72,"59_118":40,"59_122":99,"59_128":103,"59_131":361,"59_132":126,"59_70":63,"59_73":77,"59_89":25,"59_94":31,"59_99":77,"60_114":5,"60_116":11,"60_119":38,"60_66":223,"60_70":81,"60_71":34,"60_72":56,"60_86":70,"60_88":33,"61_111":126,"61_116":50,"61_76":58,"61_77":188,"61_78":55,"61_88":45,"61_92":31,"62_107":294,"62_119":53,"62_120":52,"62_121":72,"62_123":51,"62_124":35,"62_131":113,"62_133":410,"62_135":216,"62_66":208,"62_79":190,"63_116":76,"63_117":28,"63_118":171,"63_119":295,"63_120":213,"63_121":210,"63_123":206,"63_125":99,"63_135":154,"63_76":114,"63_79":94,"63_95":96,"63_99":66,"64_106":193,"64_108":172,"64_109":123,"64_116":41,"64_117":64,"64_118":80,"64_119":121,"64_124":203,"64_129":230,"64_131":99,"64_133":208,"64_134":104,"64_77":118,"64_78":78,"64_86":330,"65_100":413,"65_104":40,"65_109":78,"65_112":257,"65_114":49,"65_117":211,"65_118":307,"65_119":364,"65_120":207,"65_122":191,"65_128":202,"65_132":467,"65_133":303,"65_134":134,"65_138":314,"65_140":115,"65_67":77,"65_89":211,"66_100":69,"66_107":62,"66_110":80,"66_112":259,"66_113":251,"66_117":261,"66_119":255,"66_122":98,"66_128":225,"66_133":260,"66_135":329,"66_72":137,"66_80":152,"66_89":277,"67_102":73,"67_105":36,"67_108":120,"67_111":149,"67_113":562,"67_115":235,"67_116":157,"67_119":89,"67_120":87,"67_122":167,"67_123":303,"67_80":107,"67_94":412,"68_102":56,"68_104":85,"68_109":128,"68_115":121,"68_118":172,"68_122":219,"68_123":122,"68_128":349,"68_129":215,"68_133":359,"68_68":298,"69_111":52,"69_115":101,"69_118":75,"69_123":179,"69_69":83,"70_116":131,"70_119":86,"70_129":112,"70_130":170,"71_106":311,"71_108":336,"71_111":89,"71_113":169,"71_115":286,"71_118":100,"71_119":89,"71_120":140,"71_121":75,"71_123":90,"71_124":102,"71_131":331,"71_70":56,"71_86":444,"72_106":454,"72_115":460,"72_116":241,"72_117":109,"72_119":76,"72_122":102,"72_125":210,"72_128":336,"72_129":224,"72_131":252,"72_132":133,"72_133":176,"72_63":0,"72_89":461,"73_104":159,"73_116":263,"73_117":125,"73_118":84,"73_120":205,"73_121":155,"73_122":363,"73_131":252,"73_66":78,"73_86":450,"73_90":540,"74_103":209,"74_115":268,"74_123":219,"74_124":345,"74_125":380,"74_65":0,"74_70":5,"74_96":213,"75_114":71,"75_115":80,"75_121":499,"75_123":70,"75_126":333,"75_128":400,"76_66":0,"76_99":515,"77_100":445,"77_116":172,"77_122":150,"77_77":153,"77_84":869,"78_123":568,"78_71":-1,"79_125":379,"79_134":755,"79_73":5,"79_86":409,"79_94":260,"79_98":313,"80_68":0,"80_73":13,"80_74":76,"80_87":546,"81_109":492,"81_118":247,"81_125":692,"82_117":277,"82_119":257,"82_79":120,"82_87":374,"83_128":685,"83_75":134,"83_87":54,"84_78":14,"84_86":202,"85_141":549,"85_143":337,"85_70":2,"85_77":65,"85_89":116,"85_92":117,"86_120":418,"86_141":73,"86_142":33,"86_73":61,"86_93":81,"86_94":138,"86_97":67,"87_67":0,"87_82":28,"87_97":243,"87_98":258,"88_100":55,"88_104":242,"88_110":121,"88_138":71,"88_99":199,"89_104":123,"89_120":563,"89_129":788,"89_69":186,"89_78":119,"89_81":79,"90_77":30,"90_86":105,"90_96":274,"91_106":166,"91_72":162,"91_93":609,"92_119":1371,"92_133":18,"92_74":40,"92_82":4,"92_89":157,"93_77":97,"93_78":56,"93_82":118,"93_86":218,"93_91":81,"93_93":216,"94_119":920,"94_131":35,"94_82":465,"94_88":225,"95_78":162,"96_120":362,"96_81":635,"96_93":145,"96_95":153,"97_80":147,"97_81":167,"97_94":194,"98_124":219,"98_78":116,"98_82":288,"98_83":153,"98_84":318,"99_80":141,"99_83":147,"99_93":137,"99_94":154};
+function shtTempAdj(){
+  const g=dfsXy(COURSE.lat,COURSE.lon);
+  const ge=GRID_ELE[g.nx+"_"+g.ny];
+  if(ge==null||COURSE.ele==null)return 0;
+  return -(COURSE.ele-ge)*LAPSE_PER_M;
+}
 // 기상청 중기예보는 관측지점 고도의 값이다.
 // 코스가 그보다 높으면 그만큼 낮게, 낮으면 높게 보정한다.
 function midTempAdj(){
@@ -1547,7 +1560,7 @@ async function loadAir(){
                pm25:now.pm25Value,pm25g:AIR_GRADE[now.pm25Grade]||null,
                time:now.dataTime}:null,
       days,
-      base:fc.length?fc[0].dataTime:null,
+      base:(fc&&fc.length)?fc[0].dataTime:null,
       wkNote:wk?wk.gwthcnd:null
     };
     try{localStorage.setItem(ck,JSON.stringify({t:Date.now(),d:AIR}));}catch(e){}
@@ -1611,7 +1624,8 @@ function render(){
   const UH=unifiedHourly(hi,h0,Math.min(h0+72,hi.time.length));
   const u0=UH[0]||{};
   const ob=(KMA&&!KMA.error&&KMA.now)?KMA.now:null;
-  const curT=ob&&ob.tmp!=null?ob.tmp:u0.tmp;
+  const SADJ=shtTempAdj();
+  const curT=ob&&ob.tmp!=null?ob.tmp+SADJ:u0.tmp;
   const curH=ob&&ob.reh!=null?ob.reh:u0.reh;
   const curW=ob&&ob.wsd!=null?ob.wsd*3.6:u0.wind;
   const cur={
@@ -1625,7 +1639,8 @@ function render(){
     desc:u0.desc||"",
     uv:u0.uv,
     // 실황은 소수점 첫째 자리까지 발표되므로 출처 표기에 정확한 값을 함께 보여준다
-    src:ob?`기상청 실황(관측) ${ob.tmp.toFixed(1)}°`:(u0.src==="모델"?"예보 모델":"기상청 "+(u0.src||"")),
+    src:ob?`기상청 실황 ${ob.tmp.toFixed(1)}°${SADJ?` · 고도보정 ${SADJ>0?"+":""}${SADJ.toFixed(1)}°`:""}`
+        :(u0.src==="모델"?"예보 모델":"기상청 "+(u0.src||"")),
   };
   const airG=airWorstToday();
   const g=gi(cur.rain,cur.wind,cur.temp,airG);
@@ -1636,7 +1651,7 @@ function render(){
   let html=`
 <div id="curCard">
   <div class="cloc"><span class="cnm">📍 ${COURSE.name}</span><span class="cloc-r">${COURSE.address}</span></div>
-  <div class="cstamp">${stamp}<span style="font-weight:400;opacity:.8">${COURSE.ele!=null?` · 해발 ${COURSE.ele}m`:""}</span></div>
+  <div class="cstamp">${stamp}<span style="font-weight:400;opacity:.8">${COURSE.ele!=null?` · 해발 ${COURSE.ele}m`:""}${cur.src.indexOf("기상청")>=0?" · 🏛️ 기상청":""}</span></div>
   <div class="crow">
     <div><div class="btlabel">현재온도</div><div class="btemp">${cur.temp}°</div><div class="feel">체감 ${cur.feel}°${FIELD?` · <b style="font-weight:700">세이지우드홍천현장실측온도 ${FIELD.temp.toFixed(1)}°</b>`:""} · ${cur.desc}</div></div>
     <div class="wico">${cur.icon}</div>
@@ -1656,39 +1671,56 @@ function render(){
 </div>
 <div id="tabs">
   <div class="tb${TAB==="hourly"?" on":""}" onclick="setTab('hourly')">⏱ 시간대별</div>
-  <div class="tb${TAB==="daily"?" on":""}" onclick="setTab('daily')">🗓️ 16일 예보</div>
+  <div class="tb${TAB==="daily"?" on":""}" onclick="setTab('daily')">🗓️ 일별 예보</div>
   <div class="tb${TAB==="chart"?" on":""}" onclick="setTab('chart')">📊 그래프</div>
 </div>`;
 
   // 시간대별 72시간
   if(TAB==="hourly"){
     const totalH=Math.min(h0+72,hi.time.length);
-    let lastDate="";
-    const nK=UH.filter(u=>u.src!=="모델").length;
-    html+=`<div class="sec">시간대별 · 최대 72시간</div>
+    const nMdl=UH.filter(u=>u.src==="모델").length;
+    const strip=(rows,cls)=>{
+      let s=`<div class="hscroll"><div class="hrow">`,last="";
+      rows.forEach((r,n)=>{
+        const t=r.t,hr=t.getHours(), ds=`${t.getMonth()+1}/${t.getDate()}`;
+        if(ds!==last){
+          const lbl=n===0?`오늘 ${ds}(${DAYS[t.getDay()]})`:`${ds}(${DAYS[t.getDay()]})`;
+          s+=`<div class="day-sep"><div class="day-sep-inner">${lbl}</div></div>`;
+          last=ds;
+        }
+        s+=`<div class="hc${n===0?" now":""}">
+          <div class="ht">${hr===0?"자정":hr+"시"}${r.mark||""}</div>
+          <div class="hico">${r.icon}</div>
+          <div class="htemp"${r.dim?' style="color:#aabbaa"':''}>${r.val}</div>
+          <div class="hrain">💧${r.pop}</div>
+          <div class="hwind">🌬️${r.wind}</div>
+          ${cls==="top"?airCell(r.iso):""}
+        </div>`;
+      });
+      return s+`</div></div>`;
+    };
+    // 위: 기상청 + 코스 고도 보정
+    html+=`<div class="sec">🏛️ 기상청 + 고도 적용 · 시간대별 최대 72시간</div>
     <div class="legend">칸마다 위에서부터 &nbsp;<b>시각</b> · <b>날씨</b> · <b>기온</b> · <b>💧강수확률</b> · <b>🌬️풍속(km/h)</b> · <b>미세</b> · <b>오존</b>
-    <br><span style="opacity:.85">기온은 <b>기상청</b> 값입니다 — 지금은 초단기실황(관측), 약 6시간까지는 초단기예보, 이후 +3일까지는 단기예보.
-    기상청 5km 격자에는 지형 고도가 이미 반영되어 있어 별도 보정은 하지 않습니다.
-    ${nK<UH.length?`기상청 자료가 없는 시각(${UH.length-nK}칸)은 예보 모델로 채웠고 칸에 <b>모델</b>로 표시합니다.`:""}</span></div>
-    <div class="hscroll"><div class="hrow">`;
-    UH.forEach((u,n)=>{
-      const t=u.t,hr=t.getHours();
-      const ds=`${t.getMonth()+1}/${t.getDate()}`;
-      if(ds!==lastDate){
-        const lbl=n===0?`오늘 ${ds}(${DAYS[t.getDay()]})`:`${ds}(${DAYS[t.getDay()]})`;
-        html+=`<div class="day-sep"><div class="day-sep-inner">${lbl}</div></div>`;
-        lastDate=ds;
-      }
-      html+=`<div class="hc${n===0?" now":""}">
-        <div class="ht">${hr===0?"자정":hr+"시"}${u.src==="초단기"?`<span title="초단기예보" style="color:#1a7a4a">·</span>`:""}${u.src==="모델"?`<span class="hsrc">모델</span>`:""}</div>
-        <div class="hico">${u.icon}</div>
-        <div class="htemp">${Math.round(u.tmp)}°</div>
-        <div class="hrain">💧${u.pop}%</div>
-        <div class="hwind">🌬️${Math.round(u.wind)}</div>
-        ${airCell(u.iso)}
-      </div>`;
-    });
-    html+=`</div></div>`;
+    <br><span style="opacity:.85">기상청 발표값에 코스 해발 ${COURSE.ele}m 보정 ${SADJ>=0?"+":""}${SADJ.toFixed(1)}° 를 적용한 값입니다.
+    ${nMdl?`기상청 자료가 없는 ${nMdl}칸은 예보 모델(<b>모델</b> 표시)입니다.`:""}</span></div>`;
+    html+=strip(UH.map(u=>({
+      t:u.t,iso:u.iso,icon:u.icon,
+      val:Math.round(u.tmp)+"°",
+      pop:u.pop+"%", wind:Math.round(u.wind),
+      mark:u.src==="초단기"?`<span title="초단기예보" style="color:#1a7a4a">·</span>`
+          :(u.src==="모델"?`<span class="hsrc">모델</span>`:""),
+    })),"top");
+    // 아래: 기상청 발표값 그대로
+    html+=`<div class="sec">🏛️ 기상청 발표값 · 고도 보정 없음</div>`;
+    html+=strip(UH.map(u=>({
+      t:u.t,iso:u.iso,icon:u.raw!=null?u.icon:"–",
+      val:u.raw!=null?Math.round(u.raw)+"°":"–",
+      pop:u.raw!=null?u.pop+"%":"–", wind:u.raw!=null?Math.round(u.wind):"–",
+      dim:u.raw==null,
+    })),"bottom");
+    html+=`<div class="km-note">위아래 차이는 코스 해발고도 보정분(${SADJ>=0?"+":""}${SADJ.toFixed(1)}°)입니다.
+      기상청 5km 격자에도 지형고도가 일부 반영되어 있어 보정폭이 크지 않습니다.</div>`;
   }
 
   // ── 일별 표시값 ──
@@ -1701,12 +1733,12 @@ function render(){
     const useMid=!!(k&&k.mid&&k.tmx!=null);          // 4~10일: 중기예보(지점값) + 고도보정
     const useSht=!!(k&&!k.mid&&(k.tmx!=null||k.tmn!=null));  // 0~3일: 단기예보(격자값) 그대로
     const om_x=da.temperature_2m_max?.[i], om_n=da.temperature_2m_min?.[i];
-    const adj=useMid?MADJ:0;
+    const adj=useMid?MADJ:(useSht?SADJ:0);
     const kx=(useMid||useSht)&&k.tmx!=null?k.tmx+adj:null;
     const kn=(useMid||useSht)&&k.tmn!=null?k.tmn+adj:null;
     return {
       t,i,k,useMid,useSht,adj,
-      src:useMid?"기상청+고도":(useSht?"기상청":"모델"),
+      src:(useMid||useSht)?"기상청+고도":"모델",
       tmax:kx!=null?kx:om_x,
       tmin:kn!=null?kn:om_n,
       pop:(useMid||useSht)&&k.pop!=null?k.pop:(da.precipitation_probability_max?.[i]??0),
@@ -1716,20 +1748,25 @@ function render(){
     };
   });
 
-  // 16일 예보
+  // 기상청 자료(단기+중기)가 있는 마지막 날까지만 보여준다. 그 뒤는 신뢰도가 낮아 생략.
+  let lastK=-1;
+  DDAY.forEach((D,i)=>{ if(D.useMid||D.useSht)lastK=i; });
+  const DSHOW=lastK>=0?DDAY.slice(0,lastK+1):DDAY;
+
+  // 일별 예보
   if(TAB==="daily"){
-    html+=`<div class="sec">예상 날씨 (고도 반영) · 일별 예보 (클릭 시 상세)</div>`;
+    html+=`<div class="sec">🏛️ 기상청 + 고도 적용 · ${DSHOW.length}일 예보 (클릭 시 상세)</div>`;
     html+=`<div class="legend">
       각 줄 왼쪽부터 &nbsp;<b>날짜</b> · <b>날씨</b>와 <b>골프지수</b> · <b>💧강수확률</b> ·
       <b>최고/최저 기온</b>
-      <br><span style="opacity:.85">기온 출처 — <b>기상청</b>: 단기예보(0~3일) 격자값 그대로 ·
-      <b>기상청+고도</b>: 중기예보(4~10일) 지점값에 코스 해발 ${COURSE.ele}m 보정 ${MADJ>=0?"+":""}${MADJ.toFixed(1)}° 적용 ·
-      <b>모델</b>: 기상청 범위 밖(11일~)이라 예보 모델 사용</span>
-      ${KMA_KEY&&KMA&&!KMA.error&&KMA.mid?`<br>4~10일 줄 아래 <b>🏛️ 기상청 중기·발표값</b> 은 보정 전 원본입니다 · ${KMA.mid.base}`:""}
+      <br><span style="opacity:.85">기온은 모두 기상청 발표값에 코스 해발 ${COURSE.ele}m 보정을 적용한 값입니다 —
+      단기예보(0~3일) ${SADJ>=0?"+":""}${SADJ.toFixed(1)}° · 중기예보(4~10일) ${MADJ>=0?"+":""}${MADJ.toFixed(1)}°.
+      기상청 자료가 없는 날은 표시하지 않습니다.</span>
+      ${KMA_KEY&&KMA&&!KMA.error?`<br>각 줄 아래 <b>🏛️ 기상청 발표값</b> 은 보정 전 원본입니다${KMA.mid?` · 중기 ${KMA.mid.base}`:""}`:""}
       ${AIR&&!AIR.error&&AIR.days&&Object.keys(AIR.days).length?`<br>😷 줄은 <b>에어코리아 미세먼지 예보</b>, 그 아래 <b>오존</b> 줄입니다 (오늘~모레는 등급, 이후는 농도 전망).`:""}
       <br><span style="opacity:.85">※ 기온·강수확률·바람·하늘상태는 모두 기상청 발표값 기준입니다. UV·일출/일몰만 예보 모델을 씁니다.</span>
     </div>`;
-    DDAY.forEach((D)=>{
+    DSHOW.forEach((D)=>{
       const t=D.t,i=D.i;
       const dt=new Date(t+"T12:00:00");
       const dc=dt.getDay()===0?"#c02020":dt.getDay()===6?"#2060c0":"#1a2e1a";
@@ -1764,25 +1801,25 @@ function render(){
 
   // 그래프
   if(TAB==="chart"){
-    const labs=da.time.map((t,i)=>{
+    const labs=DSHOW.map((D,i)=>{ const t=D.t;
       if(i===0)return"오늘";if(i===1)return"내일";
       const d=new Date(t+"T12:00:00");return`${d.getMonth()+1}/${d.getDate()}`;
     });
-    const bw=34,gap=5,pw=da.time.length*(bw+gap)+8;
-    const kAll=[].concat(DDAY.map(d=>d.tmax),DDAY.map(d=>d.tmin),
+    const bw=34,gap=5,pw=DSHOW.length*(bw+gap)+8;
+    const kAll=[].concat(DSHOW.map(d=>d.tmax),DSHOW.map(d=>d.tmin),
       kmxOf(da),kmnOf(da)).filter(v=>v!=null);
     const maxT=Math.max(...kAll),minT=Math.min(...kAll),tR=maxT-minT||1;
     const svgH=110,pad=16;
     const tx=i=>i*(bw+gap)+bw/2+4;
     const ty=v=>svgH-pad-((v-minT)/tR)*(svgH-pad*2);
-    const maxPts=DDAY.map((d,i)=>d.tmax!=null?`${tx(i)},${ty(d.tmax)}`:null).filter(Boolean).join(" ");
-    const minPts=DDAY.map((d,i)=>d.tmin!=null?`${tx(i)},${ty(d.tmin)}`:null).filter(Boolean).join(" ");
-    const maxW=Math.max(...da.windspeed_10m_max)||1;
+    const maxPts=DSHOW.map((d,i)=>d.tmax!=null?`${tx(i)},${ty(d.tmax)}`:null).filter(Boolean).join(" ");
+    const minPts=DSHOW.map((d,i)=>d.tmin!=null?`${tx(i)},${ty(d.tmin)}`:null).filter(Boolean).join(" ");
+    const maxW=Math.max(...DSHOW.map(d=>d.wind))||1;
 
     // 기상청 일별 값 (없는 날은 null)
-    const kmx=da.time.map(t=>{const k=kmaDay(t);return k&&k.tmx!=null?k.tmx:null;});
-    const kmn=da.time.map(t=>{const k=kmaDay(t);return k&&k.tmn!=null?k.tmn:null;});
-    const kpop=da.time.map(t=>{const k=kmaDay(t);return k&&k.pop!=null?k.pop:null;});
+    const kmx=DSHOW.map(D=>{const k=kmaDay(D.t);return k&&k.tmx!=null?k.tmx:null;});
+    const kmn=DSHOW.map(D=>{const k=kmaDay(D.t);return k&&k.tmn!=null?k.tmn:null;});
+    const kpop=DSHOW.map(D=>{const k=kmaDay(D.t);return k&&k.pop!=null?k.pop:null;});
     const hasK=KMA_KEY&&KMA&&!KMA.error&&kmx.some(v=>v!=null);
     html+=`<div class="chart-card"><div class="chart-t">💧 일별 강수확률 (%)</div>
     <div style="display:flex;gap:12px;font-size:11.5px;margin-bottom:8px;color:#5a7a5a;flex-wrap:wrap">
@@ -1791,7 +1828,7 @@ function render(){
     </div>
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
     <div class="bar-wrap" style="width:${pw}px">`;
-    DDAY.forEach((D,i)=>{
+    DSHOW.forEach((D,i)=>{
       const v=D.pop, kv=kpop[i];
       html+=`<div class="bw"><div class="bv" style="color:#2060b0">${v??0}%${kv!=null?`<span style="color:#0a3a6a">/${kv}</span>`:""}</div>
         <div style="display:flex;align-items:flex-end;gap:2px">
@@ -1808,7 +1845,7 @@ function render(){
       <span><span style="color:#2060c0">●</span> 최저</span>
       ${hasK?`<span><span style="color:#c03020">┈</span> 최고(기상청 발표값)</span>
       <span><span style="color:#2060c0">┈</span> 최저(기상청 발표값)</span>
-      <span style="opacity:.7">4~10일 실선은 기상청+고도보정</span>`:""}
+      <span style="opacity:.7">실선은 기상청+고도보정</span>`:""}
     </div>
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
     <svg width="${pw}" height="${svgH}" viewBox="0 0 ${pw} ${svgH}" style="overflow:visible;display:block">
@@ -1816,8 +1853,8 @@ function render(){
       <polyline points="${minPts}" fill="none" stroke="#2060c0" stroke-width="2" stroke-linejoin="round"/>
       ${hasK?segPolyline(kmx,tx,ty,"#c03020"):""}
       ${hasK?segPolyline(kmn,tx,ty,"#2060c0"):""}
-      ${DDAY.map((d,i)=>d.tmax==null?"":`<circle cx="${tx(i)}" cy="${ty(d.tmax)}" r="3" fill="#c03020"/><text x="${tx(i)}" y="${ty(d.tmax)-6}" text-anchor="middle" font-size="9" fill="#c03020">${Math.round(d.tmax)}°</text>`).join("")}
-      ${DDAY.map((d,i)=>d.tmin==null?"":`<circle cx="${tx(i)}" cy="${ty(d.tmin)}" r="3" fill="#2060c0"/><text x="${tx(i)}" y="${ty(d.tmin)+13}" text-anchor="middle" font-size="9" fill="#2060c0">${Math.round(d.tmin)}°</text>`).join("")}
+      ${DSHOW.map((d,i)=>d.tmax==null?"":`<circle cx="${tx(i)}" cy="${ty(d.tmax)}" r="3" fill="#c03020"/><text x="${tx(i)}" y="${ty(d.tmax)-6}" text-anchor="middle" font-size="9" fill="#c03020">${Math.round(d.tmax)}°</text>`).join("")}
+      ${DSHOW.map((d,i)=>d.tmin==null?"":`<circle cx="${tx(i)}" cy="${ty(d.tmin)}" r="3" fill="#2060c0"/><text x="${tx(i)}" y="${ty(d.tmin)+13}" text-anchor="middle" font-size="9" fill="#2060c0">${Math.round(d.tmin)}°</text>`).join("")}
     </svg>
     <div style="display:flex;gap:${gap}px;width:${pw}px;padding-top:4px">
       ${labs.map(l=>`<div style="width:${bw}px;flex-shrink:0;text-align:center;font-size:9px;color:#5a7a5a">${l}</div>`).join("")}
@@ -1828,7 +1865,7 @@ function render(){
       <span style="color:#1a7a4a">■</span> 예보 모델 기준(기상청 미제공)</span></div>
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
     <div class="bar-wrap" style="width:${pw}px">`;
-    da.windspeed_10m_max.forEach((v,i)=>{
+    DSHOW.forEach((D,i)=>{ const v=D.wind;
       html+=`<div class="bw"><div class="bv" style="color:#1a7a4a">${Math.round(v??0)}</div><div class="bar" style="height:${Math.max(3,Math.round((v??0)/maxW*100))}px;background:#1a7a4a"></div><div class="bl">${labs[i]}</div></div>`;
     });
     html+=`</div></div></div>`;
