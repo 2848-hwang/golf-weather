@@ -880,8 +880,6 @@ function unifiedHourly(hi,h0,totalH){
     const useK=!!(k&&k.tmp!=null);
     out.push({
       t,i,iso:hi.time[i],
-      raw:useK?k.tmp:null,        // 기상청 발표값(고도 미보정)
-      adj:useK?adj:0,
       tmp:useK?k.tmp+adj:hi.temperature_2m[i],
       pop:(useK&&k.pop!=null)?k.pop:(hi.precipitation_probability?.[i]??0),
       wind:(useK&&k.wsd!=null)?k.wsd*3.6:(hi.windspeed_10m?.[i]??0),
@@ -1679,7 +1677,7 @@ function render(){
   if(TAB==="hourly"){
     const totalH=Math.min(h0+72,hi.time.length);
     const nMdl=UH.filter(u=>u.src==="모델").length;
-    const strip=(rows,cls)=>{
+    const strip=(rows)=>{
       let s=`<div class="hscroll"><div class="hrow">`,last="";
       rows.forEach((r,n)=>{
         const t=r.t,hr=t.getHours(), ds=`${t.getMonth()+1}/${t.getDate()}`;
@@ -1691,10 +1689,10 @@ function render(){
         s+=`<div class="hc${n===0?" now":""}">
           <div class="ht">${hr===0?"자정":hr+"시"}${r.mark||""}</div>
           <div class="hico">${r.icon}</div>
-          <div class="htemp"${r.dim?' style="color:#aabbaa"':''}>${r.val}</div>
+          <div class="htemp">${r.val}</div>
           <div class="hrain">💧${r.pop}</div>
           <div class="hwind">🌬️${r.wind}</div>
-          ${cls==="top"?airCell(r.iso):""}
+          ${airCell(r.iso)}
         </div>`;
       });
       return s+`</div></div>`;
@@ -1703,6 +1701,7 @@ function render(){
     html+=`<div class="sec">🏛️ 기상청 + 고도 적용 · 시간대별 최대 72시간</div>
     <div class="legend">칸마다 위에서부터 &nbsp;<b>시각</b> · <b>날씨</b> · <b>기온</b> · <b>💧강수확률</b> · <b>🌬️풍속(km/h)</b> · <b>미세</b> · <b>오존</b>
     <br><span style="opacity:.85">기상청 발표값에 코스 해발 ${COURSE.ele}m 보정 ${SADJ>=0?"+":""}${SADJ.toFixed(1)}° 를 적용한 값입니다.
+    (기상청 5km 격자에도 지형고도가 일부 반영되어 있어 보정폭이 크지 않습니다.)
     ${nMdl?`기상청 자료가 없는 ${nMdl}칸은 예보 모델(<b>모델</b> 표시)입니다.`:""}</span></div>`;
     html+=strip(UH.map(u=>({
       t:u.t,iso:u.iso,icon:u.icon,
@@ -1710,17 +1709,7 @@ function render(){
       pop:u.pop+"%", wind:Math.round(u.wind),
       mark:u.src==="초단기"?`<span title="초단기예보" style="color:#1a7a4a">·</span>`
           :(u.src==="모델"?`<span class="hsrc">모델</span>`:""),
-    })),"top");
-    // 아래: 기상청 발표값 그대로
-    html+=`<div class="sec">🏛️ 기상청 발표값 · 고도 보정 없음</div>`;
-    html+=strip(UH.map(u=>({
-      t:u.t,iso:u.iso,icon:u.raw!=null?u.icon:"–",
-      val:u.raw!=null?Math.round(u.raw)+"°":"–",
-      pop:u.raw!=null?u.pop+"%":"–", wind:u.raw!=null?Math.round(u.wind):"–",
-      dim:u.raw==null,
-    })),"bottom");
-    html+=`<div class="km-note">위아래 차이는 코스 해발고도 보정분(${SADJ>=0?"+":""}${SADJ.toFixed(1)}°)입니다.
-      기상청 5km 격자에도 지형고도가 일부 반영되어 있어 보정폭이 크지 않습니다.</div>`;
+    })));
   }
 
   // ── 일별 표시값 ──
