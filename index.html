@@ -716,11 +716,14 @@ let W=null,COURSE=null,TAB="hourly",OPEN=-1;
 
 // ── 유틸 ───────────────────────────────────────────────
 // 골프 지수. 4~5시간 야외에 머무는 운동이라 미세먼지 감점을 크게 잡았다.
+// 풍속 단위는 m/s (기상청 발표 단위와 동일).
 const GI_AIR={"좋음":0,"낮음":0,"보통":-3,"나쁨":-20,"높음":-20,"매우나쁨":-40};
+// r=강수확률(%), w=풍속(m/s), t=기온(°C)
 function gi(r,w,t,airGrade){
   let s=100;
   s-=Math.min(50,r*1.2);
-  if(w>10)s-=Math.min(30,(w-10)*2.5);
+  // 풍속은 m/s. 3m/s(산들바람) 를 넘는 만큼 감점하고 6.3m/s 부터 최대 감점.
+  if(w>3)s-=Math.min(30,(w-3)*9);
   if(t<5)s-=Math.min(20,(5-t)*3);
   if(t>34)s-=Math.min(15,(t-34)*3);
   if(airGrade&&GI_AIR[airGrade]!=null)s+=GI_AIR[airGrade];
@@ -737,7 +740,8 @@ function gi(r,w,t,airGrade){
 // 기상청 정의는 일사량(복사열)을 반영하지 않는다. Open-Meteo 의
 // apparent_temperature 는 일사를 포함해 여름철에 3~4°C 높게 나오므로 쓰지 않는다.
 //   · 여름(5~9월) : 습구온도 기반 (2020년 개정식)
-//   · 겨울        : 기온 10°C 이하 + 풍속 1.3m/s(≈4.8km/h) 이상일 때 풍속냉각지수
+//   · 겨울        : 기온 10°C 이하 + 풍속 1.3m/s 이상일 때 풍속냉각지수
+// 겨울 공식은 km/h 를 쓰므로 이 함수만 km/h 를 받는다. 호출부에서 m/s×3.6 으로 넘긴다.
 //   · 그 밖       : 기온 그대로
 function stullTw(ta,rh){
   return ta*Math.atan(0.151977*Math.sqrt(rh+8.313659))
@@ -763,8 +767,9 @@ function feelDaily(hi){
   if(!hi||!Array.isArray(hi.time)||!Array.isArray(hi.temperature_2m))return m;
   for(let i=0;i<hi.time.length;i++){
     const dt=new Date(hi.time[i]);
+    const ws=hi.windspeed_10m?.[i];
     const f=feelTemp(hi.temperature_2m[i],hi.relative_humidity_2m?.[i],
-                     hi.windspeed_10m?.[i],dt);
+                     ws!=null?ws*3.6:null,dt);
     if(f==null)continue;
     const k=hi.time[i].slice(0,10), o=m[k]=m[k]||{mx:-99,mn:99};
     if(f>o.mx)o.mx=f;
@@ -938,7 +943,7 @@ function unifiedHourly(hi,h0,totalH){
       t,i,iso:hi.time[i],
       tmp:useK?k.tmp+adj:hi.temperature_2m[i],
       pop:(useK&&k.pop!=null)?k.pop:(hi.precipitation_probability?.[i]??0),
-      wind:(useK&&k.wsd!=null)?k.wsd*3.6:(hi.windspeed_10m?.[i]??0),
+      wind:(useK&&k.wsd!=null)?k.wsd:(hi.windspeed_10m?.[i]??0),   // m/s
       wdir:(useK&&k.vec!=null)?k.vec:(hi.winddirection_10m?.[i]??0),
       reh:(useK&&k.reh!=null)?k.reh:(hi.relative_humidity_2m?.[i]??null),
       icon:useK?kmaIcon(k.sky,k.pty):(WIC[hi.weathercode?.[i]]||"🌡️"),
@@ -1645,7 +1650,7 @@ async function loadWeather(){
       `&models=${OM_MODELS}`+
       `&hourly=${OM_H.join(",")}`+
       `&daily=${OM_D.join(",")}`+
-      `&timezone=Asia%2FSeoul&forecast_days=16&wind_speed_unit=kmh`+
+      `&timezone=Asia%2FSeoul&forecast_days=16&wind_speed_unit=ms`+
       // 코스 해발고도를 넘겨 기온을 고도 보정한다 (약 -0.65°C/100m)
       (COURSE.ele!=null?`&elevation=${COURSE.ele}`:``);
     const r=await fetch(url);
@@ -1681,13 +1686,13 @@ function render(){
   const SADJ=shtTempAdj();
   const curT=ob&&ob.tmp!=null?ob.tmp+SADJ:u0.tmp;
   const curH=ob&&ob.reh!=null?ob.reh:u0.reh;
-  const curW=ob&&ob.wsd!=null?ob.wsd*3.6:u0.wind;
+  const curW=ob&&ob.wsd!=null?ob.wsd:u0.wind;   // m/s
   const cur={
     temp:Math.round(curT),
-    feel:Math.round(feelTemp(curT,curH,curW,new Date(hi.time[h0]))),
+    feel:Math.round(feelTemp(curT,curH,curW!=null?curW*3.6:null,new Date(hi.time[h0]))),
     hum:curH,
     rain:u0.pop??0,
-    wind:Math.round(curW??0),
+    wind:(curW??0).toFixed(1),
     wdir:u0.wdir??0,
     icon:u0.icon||"🌡️",
     desc:u0.desc||"",
@@ -1712,7 +1717,7 @@ function render(){
   </div>
   <div class="meta4">
     <div class="mi"><div class="mi-v">${cur.rain}%</div><div class="mi-l">💧강수확률</div></div>
-    <div class="mi"><div class="mi-v">${cur.wind}</div><div class="mi-l">🌬️풍속km/h</div></div>
+    <div class="mi"><div class="mi-v">${cur.wind}</div><div class="mi-l">🌬️풍속m/s</div></div>
     <div class="mi"><div class="mi-v" style="font-size:12px">${wd(cur.wdir)}</div><div class="mi-l">🧭풍향</div></div>
     <div class="mi"><div class="mi-v">${cur.uv!=null?cur.uv.toFixed(1):"-"}</div><div class="mi-l">☀️UV</div></div>
   </div>
@@ -1721,7 +1726,7 @@ function render(){
 <div id="gibox" style="background:${g.bg};color:${g.fg}">
   <div class="gi-n">${g.s}</div>
   <div><div class="gi-h">골프 지수 — ${g.l}</div>
-  <div class="gi-s">강수 ${cur.rain}% · 풍속 ${cur.wind}km/h · ${cur.temp}°C${airG?` · 미세먼지 ${airG}`:""}</div></div>
+  <div class="gi-s">강수 ${cur.rain}% · 풍속 ${cur.wind}m/s · ${cur.temp}°C${airG?` · 미세먼지 ${airG}`:""}</div></div>
 </div>
 <div id="tabs">
   <div class="tb${TAB==="hourly"?" on":""}" onclick="setTab('hourly')">⏱ 시간대별</div>
@@ -1755,14 +1760,14 @@ function render(){
     };
     // 위: 기상청 + 코스 고도 보정
     html+=`<div class="sec">🏛️ 기상청 + 고도 적용 · 시간대별 최대 72시간</div>
-    <div class="legend">칸마다 위에서부터 &nbsp;<b>시각</b> · <b>날씨</b> · <b>기온</b> · <b>💧강수확률</b> · <b>🌬️풍속(km/h)</b> · <b>미세</b> · <b>오존</b>
+    <div class="legend">칸마다 위에서부터 &nbsp;<b>시각</b> · <b>날씨</b> · <b>기온</b> · <b>💧강수확률</b> · <b>🌬️풍속(m/s)</b> · <b>미세</b> · <b>오존</b>
     <br><span style="opacity:.85">기상청 발표값에 코스 해발 ${COURSE.ele}m 보정 ${SADJ>=0?"+":""}${SADJ.toFixed(1)}° 를 적용한 값입니다.
     (기상청 5km 격자에도 지형고도가 일부 반영되어 있어 보정폭이 크지 않습니다.)
     ${nMdl?`기상청 자료가 없는 ${nMdl}칸은 예보 모델(<b>모델</b> 표시)입니다.`:""}</span></div>`;
     html+=strip(UH.map(u=>({
       t:u.t,iso:u.iso,icon:u.icon,
       val:Math.round(u.tmp)+"°",
-      pop:u.pop+"%", wind:Math.round(u.wind),
+      pop:u.pop+"%", wind:u.wind.toFixed(1),
       mark:u.src==="초단기"?`<span title="초단기예보" style="color:#1a7a4a">·</span>`
           :(u.src==="모델"?`<span class="hsrc">모델</span>`:""),
     })));
@@ -1835,7 +1840,7 @@ function render(){
         <div class="dd${isOpen?" show":""}">
           <div><div class="ddi-l">체감 최고/최저</div><div class="ddi-v">${FD[t]?Math.round(FD[t].mx)+"° / "+Math.round(FD[t].mn)+"°":"–"}</div></div>
           <div><div class="ddi-l">강수량</div><div class="ddi-v">${(da.precipitation_sum?.[i]??0).toFixed(1)} mm</div></div>
-          <div><div class="ddi-l">최대 풍속</div><div class="ddi-v">${Math.round(da.windspeed_10m_max?.[i]??0)} km/h</div></div>
+          <div><div class="ddi-l">최대 풍속</div><div class="ddi-v">${(D.wind??0).toFixed(1)} m/s</div></div>
           <div><div class="ddi-l">풍향</div><div class="ddi-v">${wd(da.winddirection_10m_dominant?.[i]??0)}</div></div>
           <div><div class="ddi-l">UV 지수</div><div class="ddi-v">${da.uv_index_max?.[i]?.toFixed(1)||"-"}</div></div>
           <div><div class="ddi-l">일출 / 일몰</div><div class="ddi-v">${(da.sunrise?.[i]||"").split("T")[1]||"-"} / ${(da.sunset?.[i]||"").split("T")[1]||"-"}</div></div>
