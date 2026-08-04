@@ -777,6 +777,12 @@ function feelDaily(hi){
   }
   return m;
 }
+// 풍속 표기. 기상청 초단기예보 WSD 는 정수로만 발표되므로
+// 없는 정밀도를 만들어내지 않도록 소수가 있을 때만 소수점을 붙인다.
+function fmtWind(v){
+  if(v==null||isNaN(v))return "–";
+  return Number.isInteger(v)?String(v):v.toFixed(1);
+}
 function wd(d){
   const a=["↓","↙","←","↖","↑","↗","→","↘"];
   const n=["북","북동","동","남동","남","남서","서","북서"];
@@ -1692,7 +1698,7 @@ function render(){
     feel:Math.round(feelTemp(curT,curH,curW!=null?curW*3.6:null,new Date(hi.time[h0]))),
     hum:curH,
     rain:u0.pop??0,
-    wind:(curW??0).toFixed(1),
+    wind:fmtWind(curW??0),
     wdir:u0.wdir??0,
     icon:u0.icon||"🌡️",
     desc:u0.desc||"",
@@ -1767,7 +1773,7 @@ function render(){
     html+=strip(UH.map(u=>({
       t:u.t,iso:u.iso,icon:u.icon,
       val:Math.round(u.tmp)+"°",
-      pop:u.pop+"%", wind:u.wind.toFixed(1),
+      pop:u.pop+"%", wind:fmtWind(u.wind),
       mark:u.src==="초단기"?`<span title="초단기예보" style="color:#1a7a4a">·</span>`
           :(u.src==="모델"?`<span class="hsrc">모델</span>`:""),
     })));
@@ -1840,7 +1846,7 @@ function render(){
         <div class="dd${isOpen?" show":""}">
           <div><div class="ddi-l">체감 최고/최저</div><div class="ddi-v">${FD[t]?Math.round(FD[t].mx)+"° / "+Math.round(FD[t].mn)+"°":"–"}</div></div>
           <div><div class="ddi-l">강수량</div><div class="ddi-v">${(da.precipitation_sum?.[i]??0).toFixed(1)} mm</div></div>
-          <div><div class="ddi-l">최대 풍속</div><div class="ddi-v">${(D.wind??0).toFixed(1)} m/s</div></div>
+          <div><div class="ddi-l">최대 풍속</div><div class="ddi-v">${fmtWind(D.wind??0)} m/s</div></div>
           <div><div class="ddi-l">풍향</div><div class="ddi-v">${wd(da.winddirection_10m_dominant?.[i]??0)}</div></div>
           <div><div class="ddi-l">UV 지수</div><div class="ddi-v">${da.uv_index_max?.[i]?.toFixed(1)||"-"}</div></div>
           <div><div class="ddi-l">일출 / 일몰</div><div class="ddi-v">${(da.sunrise?.[i]||"").split("T")[1]||"-"} / ${(da.sunset?.[i]||"").split("T")[1]||"-"}</div></div>
