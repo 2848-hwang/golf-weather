@@ -117,6 +117,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#eef3ee;
 .hrow{display:flex;gap:6px;width:max-content;padding-bottom:4px}
 .hc{background:#fff;border:1.5px solid #dde8dd;border-radius:12px;padding:10px 6px;text-align:center;width:74px;flex-shrink:0}
 .hair{font-size:9.5px;margin-top:3px;padding-top:3px;border-top:1px dashed #e6efe6;line-height:1.35}
+.hsrc{font-size:8px;color:#b08a3a;margin-left:2px}
 .hair i{font-style:normal;color:#8aa88a;font-size:8.5px;display:block}
 .hc.now{border-color:#1a4a2e;background:#f0f8f2}
 .ht{font-size:11px;color:#6a8a6a;margin-bottom:4px}
@@ -840,6 +841,8 @@ function airDayLine(isoDate){
 
 function kmaDayLine(isoDate,da,i,D){
   if(!KMA_KEY||!KMA||KMA.error)return "";
+  // 단기 구간은 위 표시값이 곧 기상청 발표값이라 중복이므로 표시하지 않는다
+  if(D&&D.useSht)return "";
   const k=kmaDay(isoDate);
   if(!k||(k.tmx==null&&k.tmn==null))return "";
   // 중기 구간은 위 예상값이 이미 이 기상청 값에서 나왔으므로 차이 대신 보정량을 보여준다
@@ -865,55 +868,29 @@ function kmaDayLine(isoDate,da,i,D){
 }
 
 // 기상청 시간대별 스트립. 예상 날씨 스트립과 완전히 같은 모양으로 그린다.
-function kmaHourlyStrip(hi,h0,totalH){
-  if(!KMA_KEY)
-    return `<div class="km-warn">🏛️ <b>기상청 날씨</b>가 아직 연결되지 않았습니다.
-      공공데이터포털 인증키를 <code>KMA_KEY</code>에 넣으면 위 예상 날씨와 같은 형태로 표시됩니다.</div>`;
-  if(KMA&&KMA.error)
-    return `<div class="km-warn">🏛️ 기상청 날씨를 불러오지 못했습니다 — ${KMA.error}</div>`;
-  if(!KMA||!KMA.hourly)return "";
-  let cells="",n=0,last="";
+// 시간대별 통합값.
+// 기상청(실황·초단기·단기)을 우선 쓰고, 없는 시각은 예보 모델로 메운다.
+// 기상청 5km 격자값에는 그 격자의 지형 고도가 이미 반영되어 있으므로 추가 보정은 하지 않는다.
+function unifiedHourly(hi,h0,totalH){
+  const out=[];
   for(let i=h0;i<totalH;i++){
-    const t=new Date(hi.time[i]),k=kmaAt(t);
-    const ds=`${t.getMonth()+1}/${t.getDate()}`;
-    if(ds!==last){
-      const lbl=i===h0?`오늘 ${ds}(${DAYS[t.getDay()]})`:`${ds}(${DAYS[t.getDay()]})`;
-      cells+=`<div class="day-sep"><div class="day-sep-inner">${lbl}</div></div>`;
-      last=ds;
-    }
-    if(!k){
-      cells+=`<div class="hc"><div class="ht">${t.getHours()===0?"자정":t.getHours()+"시"}</div>
-        <div class="hico" style="opacity:.25">–</div><div class="htemp" style="color:#b8ccb8">–</div>
-        <div class="hrain" style="color:#b8ccb8">–</div><div class="hwind" style="color:#b8ccb8">–</div></div>`;
-      continue;
-    }
-    n++;
-    cells+=`<div class="hc${i===h0?" now":""}">
-      <div class="ht">${t.getHours()===0?"자정":t.getHours()+"시"}${k.src==="초단기"?`<span title="초단기예보" style="color:#1a7a4a">·</span>`:""}</div>
-      <div class="hico">${kmaIcon(k.sky,k.pty)}</div>
-      <div class="htemp">${k.tmp!=null?Math.round(k.tmp)+"°":"–"}</div>
-      <div class="hrain">💧${k.pop??0}%</div>
-      <div class="hwind">🌬️${k.wsd!=null?Math.round(k.wsd*3.6):"–"}</div>
-      ${airCell(hi.time[i])}
-    </div>`;
+    const t=new Date(hi.time[i]);
+    const k=kmaAt(t);
+    const useK=!!(k&&k.tmp!=null);
+    out.push({
+      t,i,iso:hi.time[i],
+      tmp:useK?k.tmp:hi.temperature_2m[i],
+      pop:(useK&&k.pop!=null)?k.pop:(hi.precipitation_probability?.[i]??0),
+      wind:(useK&&k.wsd!=null)?k.wsd*3.6:(hi.windspeed_10m?.[i]??0),
+      wdir:(useK&&k.vec!=null)?k.vec:(hi.winddirection_10m?.[i]??0),
+      reh:(useK&&k.reh!=null)?k.reh:(hi.relative_humidity_2m?.[i]??null),
+      icon:useK?kmaIcon(k.sky,k.pty):(WIC[hi.weathercode?.[i]]||"🌡️"),
+      desc:useK?kmaDesc(k.sky,k.pty):(WMO[hi.weathercode?.[i]]||""),
+      uv:hi.uv_index?.[i],                 // UV 는 기상청이 주지 않아 모델값
+      src:useK?(k.src||"기상청"):"모델",
+    });
   }
-  if(!n)return "";
-  const k0=kmaAt(new Date(hi.time[h0]));
-  const obs=KMA.now;
-  const om={t:Math.round(hi.temperature_2m[h0]),p:hi.precipitation_probability?.[h0]??0};
-  const d=(a,b)=>{
-    if(a==null||b==null)return"";
-    const v=Math.round((a-b)*10)/10;
-    if(v===0)return` <span style="color:#7a9a7a">(예상과 동일)</span>`;
-    return` <span style="color:${v>0?"#c04020":"#2060c0"}">(예상 대비 ${v>0?"+":""}${v})</span>`;
-  };
-  const cmp=obs
-    ? `관측 <b>${obs.tmp.toFixed(1)}°</b> (${obs.time})${d(obs.tmp,om.t)} · 강수확률 ${k0&&k0.pop!=null?k0.pop+"%":"–"}${k0&&k0.pop!=null?d(k0.pop,om.p):""} · `
-    : (k0?`현재 ${Math.round(k0.tmp)}°${d(Math.round(k0.tmp),om.t)} · `:"");
-  return `<div class="sec">기상청 날씨 <span style="font-weight:400;text-transform:none;letter-spacing:0">· 실황+초단기+단기 (고도 보정 없음)</span></div>
-    <div class="hscroll"><div class="hrow">${cells}</div></div>
-    <div class="km-note">${cmp}${KMA.base}
-    <br>기상청 발표값을 가공 없이 표시합니다 — 현재는 <b>초단기실황(관측)</b>, 약 6시간까지는 <b>초단기예보</b>, 이후는 <b>단기예보</b>입니다. 5km 격자 기준이라 코스 해발고도(${COURSE.ele}m)는 반영되지 않습니다. 시간대별은 +3일까지만 제공되며, <b>일별 예보 탭에서는 중기예보로 10일까지</b> 볼 수 있습니다.</div>`;
+  return out;
 }
 
 let SCROLL_X=0;                       // 재렌더 시 가로 스크롤 위치 보존
@@ -1630,16 +1607,25 @@ function render(){
   const now=new Date();
   let h0=hi.time.findIndex(t=>new Date(t)>=now);
   if(h0<0)h0=0;
+  // 현재 카드도 기상청 기준. 실황(관측)이 있으면 기온·습도·풍속은 그것을 쓴다.
+  const UH=unifiedHourly(hi,h0,Math.min(h0+72,hi.time.length));
+  const u0=UH[0]||{};
+  const ob=(KMA&&!KMA.error&&KMA.now)?KMA.now:null;
+  const curT=ob&&ob.tmp!=null?ob.tmp:u0.tmp;
+  const curH=ob&&ob.reh!=null?ob.reh:u0.reh;
+  const curW=ob&&ob.wsd!=null?ob.wsd*3.6:u0.wind;
   const cur={
-    temp:Math.round(hi.temperature_2m[h0]),
-    feel:Math.round(feelTemp(hi.temperature_2m[h0],hi.relative_humidity_2m?.[h0],
-                             hi.windspeed_10m?.[h0],new Date(hi.time[h0]))),
-    hum:hi.relative_humidity_2m?.[h0],
-    rain:hi.precipitation_probability?.[h0]??0,
-    wind:Math.round(hi.windspeed_10m?.[h0]??0),
-    wdir:hi.winddirection_10m?.[h0]??0,
-    wc:hi.weathercode?.[h0]??0,
-    uv:hi.uv_index?.[h0]
+    temp:Math.round(curT),
+    feel:Math.round(feelTemp(curT,curH,curW,new Date(hi.time[h0]))),
+    hum:curH,
+    rain:u0.pop??0,
+    wind:Math.round(curW??0),
+    wdir:u0.wdir??0,
+    icon:u0.icon||"🌡️",
+    desc:u0.desc||"",
+    uv:u0.uv,
+    // 실황은 소수점 첫째 자리까지 발표되므로 출처 표기에 정확한 값을 함께 보여준다
+    src:ob?`기상청 실황(관측) ${ob.tmp.toFixed(1)}°`:(u0.src==="모델"?"예보 모델":"기상청 "+(u0.src||"")),
   };
   const airG=airWorstToday();
   const g=gi(cur.rain,cur.wind,cur.temp,airG);
@@ -1650,10 +1636,10 @@ function render(){
   let html=`
 <div id="curCard">
   <div class="cloc"><span class="cnm">📍 ${COURSE.name}</span><span class="cloc-r">${COURSE.address}</span></div>
-  <div class="cstamp">${stamp}<span style="font-weight:400;opacity:.8">${COURSE.ele!=null?` · 해발 ${COURSE.ele}m 보정`:""}</span></div>
+  <div class="cstamp">${stamp}<span style="font-weight:400;opacity:.8">${COURSE.ele!=null?` · 해발 ${COURSE.ele}m`:""}</span></div>
   <div class="crow">
-    <div><div class="btlabel">현재온도</div><div class="btemp">${cur.temp}°</div><div class="feel">체감 ${cur.feel}°${FIELD?` · <b style="font-weight:700">세이지우드홍천현장실측온도 ${FIELD.temp.toFixed(1)}°</b>`:""} · ${WMO[cur.wc]||""}</div></div>
-    <div class="wico">${WIC[cur.wc]||"🌡️"}</div>
+    <div><div class="btlabel">현재온도</div><div class="btemp">${cur.temp}°</div><div class="feel">체감 ${cur.feel}°${FIELD?` · <b style="font-weight:700">세이지우드홍천현장실측온도 ${FIELD.temp.toFixed(1)}°</b>`:""} · ${cur.desc}</div></div>
+    <div class="wico">${cur.icon}</div>
   </div>
   <div class="meta4">
     <div class="mi"><div class="mi-v">${cur.rain}%</div><div class="mi-l">💧강수확률</div></div>
@@ -1661,7 +1647,7 @@ function render(){
     <div class="mi"><div class="mi-v" style="font-size:12px">${wd(cur.wdir)}</div><div class="mi-l">🧭풍향</div></div>
     <div class="mi"><div class="mi-v">${cur.uv!=null?cur.uv.toFixed(1):"-"}</div><div class="mi-l">☀️UV</div></div>
   </div>
-  <div style="margin-top:10px;font-size:11px;opacity:.55;text-align:right">${FIELD?`세이지우드 현장관측 ${FIELD.time} · `:""}예보 Open-Meteo · ${updated} 갱신</div>
+  <div style="margin-top:10px;font-size:11px;opacity:.55;text-align:right">${FIELD?`세이지우드 현장관측 ${FIELD.time} · `:""}${cur.src} · ${updated} 갱신</div>
 </div>
 <div id="gibox" style="background:${g.bg};color:${g.fg}">
   <div class="gi-n">${g.s}</div>
@@ -1678,29 +1664,31 @@ function render(){
   if(TAB==="hourly"){
     const totalH=Math.min(h0+72,hi.time.length);
     let lastDate="";
-    html+=`<div class="sec">예상 날씨 (고도 반영) · 시간대별 최대 72시간</div>
+    const nK=UH.filter(u=>u.src!=="모델").length;
+    html+=`<div class="sec">시간대별 · 최대 72시간</div>
     <div class="legend">칸마다 위에서부터 &nbsp;<b>시각</b> · <b>날씨</b> · <b>기온</b> · <b>💧강수확률</b> · <b>🌬️풍속(km/h)</b> · <b>미세</b> · <b>오존</b>
-    <br><span style="opacity:.8">기온은 코스 해발 ${COURSE.ele}m 를 적용한 값입니다. 미세·오존은 일 단위 예보라 같은 날은 같은 등급으로 표시됩니다.</span></div>
+    <br><span style="opacity:.85">기온은 <b>기상청</b> 값입니다 — 지금은 초단기실황(관측), 약 6시간까지는 초단기예보, 이후 +3일까지는 단기예보.
+    기상청 5km 격자에는 지형 고도가 이미 반영되어 있어 별도 보정은 하지 않습니다.
+    ${nK<UH.length?`기상청 자료가 없는 시각(${UH.length-nK}칸)은 예보 모델로 채웠고 칸에 <b>모델</b>로 표시합니다.`:""}</span></div>
     <div class="hscroll"><div class="hrow">`;
-    for(let i=h0;i<totalH;i++){
-      const t=new Date(hi.time[i]),hr=t.getHours();
+    UH.forEach((u,n)=>{
+      const t=u.t,hr=t.getHours();
       const ds=`${t.getMonth()+1}/${t.getDate()}`;
       if(ds!==lastDate){
-        const lbl=i===h0?`오늘 ${ds}(${DAYS[t.getDay()]})`:`${ds}(${DAYS[t.getDay()]})`;
+        const lbl=n===0?`오늘 ${ds}(${DAYS[t.getDay()]})`:`${ds}(${DAYS[t.getDay()]})`;
         html+=`<div class="day-sep"><div class="day-sep-inner">${lbl}</div></div>`;
         lastDate=ds;
       }
-      html+=`<div class="hc${i===h0?" now":""}">
-        <div class="ht">${hr===0?"자정":hr+"시"}</div>
-        <div class="hico">${WIC[hi.weathercode?.[i]]||"🌡️"}</div>
-        <div class="htemp">${Math.round(hi.temperature_2m[i])}°</div>
-        <div class="hrain">💧${hi.precipitation_probability?.[i]??0}%</div>
-        <div class="hwind">🌬️${Math.round(hi.windspeed_10m?.[i]??0)}</div>
-        ${airCell(hi.time[i])}
+      html+=`<div class="hc${n===0?" now":""}">
+        <div class="ht">${hr===0?"자정":hr+"시"}${u.src==="초단기"?`<span title="초단기예보" style="color:#1a7a4a">·</span>`:""}${u.src==="모델"?`<span class="hsrc">모델</span>`:""}</div>
+        <div class="hico">${u.icon}</div>
+        <div class="htemp">${Math.round(u.tmp)}°</div>
+        <div class="hrain">💧${u.pop}%</div>
+        <div class="hwind">🌬️${Math.round(u.wind)}</div>
+        ${airCell(u.iso)}
       </div>`;
-    }
+    });
     html+=`</div></div>`;
-    html+=kmaHourlyStrip(hi,h0,totalH);
   }
 
   // ── 일별 표시값 ──
@@ -1710,16 +1698,21 @@ function render(){
   const MADJ=midTempAdj();
   const DDAY=da.time.map((t,i)=>{
     const k=kmaDay(t);
-    const useMid=!!(k&&k.mid&&k.tmx!=null);
+    const useMid=!!(k&&k.mid&&k.tmx!=null);          // 4~10일: 중기예보(지점값) + 고도보정
+    const useSht=!!(k&&!k.mid&&(k.tmx!=null||k.tmn!=null));  // 0~3일: 단기예보(격자값) 그대로
     const om_x=da.temperature_2m_max?.[i], om_n=da.temperature_2m_min?.[i];
+    const adj=useMid?MADJ:0;
+    const kx=(useMid||useSht)&&k.tmx!=null?k.tmx+adj:null;
+    const kn=(useMid||useSht)&&k.tmn!=null?k.tmn+adj:null;
     return {
-      t,i,k,useMid,adj:useMid?MADJ:0,
-      tmax:useMid?k.tmx+MADJ:om_x,
-      tmin:useMid?(k.tmn!=null?k.tmn+MADJ:om_n):om_n,
-      pop:useMid?(k.pop??da.precipitation_probability_max?.[i]??0):(da.precipitation_probability_max?.[i]??0),
+      t,i,k,useMid,useSht,adj,
+      src:useMid?"기상청+고도":(useSht?"기상청":"모델"),
+      tmax:kx!=null?kx:om_x,
+      tmin:kn!=null?kn:om_n,
+      pop:(useMid||useSht)&&k.pop!=null?k.pop:(da.precipitation_probability_max?.[i]??0),
       wind:da.windspeed_10m_max?.[i]??0,
-      icon:useMid?midIcon(k.wf):(WIC[da.weathercode?.[i]]||"🌡️"),
-      desc:useMid?(k.wf||""):(WMO[da.weathercode?.[i]]||""),
+      icon:useMid?midIcon(k.wf):(useSht&&k.sky?kmaIcon(k.sky,k.pty):(WIC[da.weathercode?.[i]]||"🌡️")),
+      desc:useMid?(k.wf||""):(useSht&&k.sky?kmaDesc(k.sky,k.pty):(WMO[da.weathercode?.[i]]||"")),
     };
   });
 
@@ -1729,13 +1722,12 @@ function render(){
     html+=`<div class="legend">
       각 줄 왼쪽부터 &nbsp;<b>날짜</b> · <b>날씨</b>와 <b>골프지수</b> · <b>💧강수확률</b> ·
       <b>최고/최저 기온</b>
-      <br><span style="opacity:.85">기온 출처 — <b>0~3일</b>: 예상 날씨(ICON)에 코스 해발 ${COURSE.ele}m 적용 ·
-      <b>4~10일</b>: <b>기상청 중기예보</b>에 코스 해발 보정 ${MADJ>=0?"+":""}${MADJ.toFixed(1)}° 적용 ·
-      <b>11일~</b>: 예상 날씨(기상청 중기 범위 밖)</span>
-      ${KMA_KEY&&KMA&&!KMA.error?`<br>줄 아래 <b>🏛️ 기상청</b> 은 같은 항목의 기상청 발표값입니다. 괄호는 예상 날씨와의 차이.
-      <br><b>단기</b>=단기예보(+3일) · <b>중기</b>=중기예보(4~10일)${KMA.mid?` · ${KMA.mid.base}`:""}`:""}
+      <br><span style="opacity:.85">기온 출처 — <b>기상청</b>: 단기예보(0~3일) 격자값 그대로 ·
+      <b>기상청+고도</b>: 중기예보(4~10일) 지점값에 코스 해발 ${COURSE.ele}m 보정 ${MADJ>=0?"+":""}${MADJ.toFixed(1)}° 적용 ·
+      <b>모델</b>: 기상청 범위 밖(11일~)이라 예보 모델 사용</span>
+      ${KMA_KEY&&KMA&&!KMA.error&&KMA.mid?`<br>4~10일 줄 아래 <b>🏛️ 기상청 중기·발표값</b> 은 보정 전 원본입니다 · ${KMA.mid.base}`:""}
       ${AIR&&!AIR.error&&AIR.days&&Object.keys(AIR.days).length?`<br>😷 줄은 <b>에어코리아 미세먼지 예보</b>, 그 아래 <b>오존</b> 줄입니다 (오늘~모레는 등급, 이후는 농도 전망).`:""}
-      <br><span style="opacity:.85">※ 4일 이후는 전지구 모델과 기상청이 크게 갈리므로 <b>기상청 발표값을 기준</b>으로 삼습니다.</span>
+      <br><span style="opacity:.85">※ 기온·강수확률·바람·하늘상태는 모두 기상청 발표값 기준입니다. UV·일출/일몰만 예보 모델을 씁니다.</span>
     </div>`;
     DDAY.forEach((D)=>{
       const t=D.t,i=D.i;
@@ -1752,7 +1744,7 @@ function render(){
             <span class="gi-badge" style="background:${g2.bg};color:${g2.fg}">${g2.s}점 ${g2.l}</span>
           </div>
           <div class="dr-rain">💧${D.pop}%</div>
-          <div class="dr-temps"><div class="dr-src">${D.useMid?"기상청+고도":"고도적용"}</div>
+          <div class="dr-temps"><div class="dr-src">${D.src}</div>
             <span class="dr-lbl">최고</span>${D.tmax!=null?Math.round(D.tmax)+"°":"–"}<br>
             <span class="dr-lbl">최저</span><span class="dr-lo">${D.tmin!=null?Math.round(D.tmin)+"°":"–"}</span></div>
         </div>
@@ -1794,7 +1786,7 @@ function render(){
     const hasK=KMA_KEY&&KMA&&!KMA.error&&kmx.some(v=>v!=null);
     html+=`<div class="chart-card"><div class="chart-t">💧 일별 강수확률 (%)</div>
     <div style="display:flex;gap:12px;font-size:11.5px;margin-bottom:8px;color:#5a7a5a;flex-wrap:wrap">
-      <span><span style="color:#3080d0">■</span> 예상 날씨(고도 반영)</span>
+      <span><span style="color:#3080d0">■</span> 기상청 기준</span>
       ${hasK?`<span><span style="color:#0a3a6a">■</span> 기상청(단기+중기, 10일)</span>`:""}
     </div>
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
@@ -1812,8 +1804,8 @@ function render(){
 
     html+=`<div class="chart-card"><div class="chart-t">🌡️ 일별 최고·최저 기온 (°C)</div>
     <div style="display:flex;gap:12px;font-size:11.5px;margin-bottom:8px;color:#5a7a5a;flex-wrap:wrap">
-      <span><span style="color:#c03020">●</span> 최고(예상)</span>
-      <span><span style="color:#2060c0">●</span> 최저(예상)</span>
+      <span><span style="color:#c03020">●</span> 최고</span>
+      <span><span style="color:#2060c0">●</span> 최저</span>
       ${hasK?`<span><span style="color:#c03020">┈</span> 최고(기상청 발표값)</span>
       <span><span style="color:#2060c0">┈</span> 최저(기상청 발표값)</span>
       <span style="opacity:.7">4~10일 실선은 기상청+고도보정</span>`:""}
@@ -1833,7 +1825,7 @@ function render(){
 
     html+=`<div class="chart-card"><div class="chart-t">🌬️ 일별 최대 풍속 (km/h)</div>
     <div style="font-size:11.5px;margin-bottom:8px;color:#5a7a5a">
-      <span style="color:#1a7a4a">■</span> 예상 날씨(고도 반영) 기준</span></div>
+      <span style="color:#1a7a4a">■</span> 예보 모델 기준(기상청 미제공)</span></div>
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
     <div class="bar-wrap" style="width:${pw}px">`;
     da.windspeed_10m_max.forEach((v,i)=>{
