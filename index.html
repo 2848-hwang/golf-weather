@@ -1484,26 +1484,52 @@ async function loadAir(){
     if(j?.OpenAPI_ServiceResponse)throw new Error(j.OpenAPI_ServiceResponse.cmmMsgHeader?.errMsg||op);
     return j?.response?.body?.items||[];
   };
+  // 미세먼지 예보는 응답 하나에 전국 권역이 다 들어있다.
+  // 골프장을 여러 곳 봐도 한 번만 받아 재사용한다 (일일 호출 한도 절약).
+  const shared=async(op,params,key,ttl)=>{
+    try{
+      const c=JSON.parse(localStorage.getItem(key)||"null");
+      if(c&&Date.now()-c.t<ttl)return c.d;
+    }catch(e){}
+    const v=await get(op,params);
+    try{localStorage.setItem(key,JSON.stringify({t:Date.now(),d:v}));}catch(e){}
+    return v;
+  };
   const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   const today=new Date();
   try{
-    const jobs=[
-      COURSE.stn?get("getMsrstnAcctoRltmMesureDnsty",{stationName:COURSE.stn,dataTerm:"DAILY",ver:"1.3"}).catch(()=>null):null,
-      get("getMinuDustFrcstDspth",{searchDate:iso(today)}).catch(()=>null),
-    ];
-    // 주간예보는 전일 발표분이 최신인 경우가 많아 최근 3일을 훑는다
-    for(let i=0;i<=2;i++){
-      const d=new Date(today.getTime()); d.setDate(d.getDate()-i);
-      jobs.push(get("getMinuDustWeekFrcstDspth",{searchDate:iso(d)}).catch(()=>null));
-    }
-    const res=await Promise.all(jobs);
-    const now=res[0]&&res[0].length?res[0][0]:null;
-    const fc=res[1]||[];
-    const wk=(res.slice(2).find(x=>x&&x.length)||[])[0]||null;
+    const hh=String(today.getHours()).padStart(2,"0");
+    // 주간예보는 전일 발표분이 최신인 경우가 많다. 성공한 날짜를 기억해 다음엔 그것부터 시도한다.
+    const weekOnce=async()=>{
+      let hint=null;
+      try{hint=localStorage.getItem("airWkHint");}catch(e){}
+      const order=[];
+      if(hint)order.push(hint);
+      for(let i=0;i<=2;i++){
+        const d=new Date(today.getTime()); d.setDate(d.getDate()-i);
+        const k=iso(d);
+        if(!order.includes(k))order.push(k);
+      }
+      for(const k of order){
+        const v=await shared("getMinuDustWeekFrcstDspth",{searchDate:k},`airwk_${k}`,6*60*60*1000)
+                  .catch(()=>null);
+        if(v&&v.length){
+          try{localStorage.setItem("airWkHint",k);}catch(e){}
+          return v[0];
+        }
+      }
+      return null;
+    };
+    const [now0,fc,wk]=await Promise.all([
+      COURSE.stn?get("getMsrstnAcctoRltmMesureDnsty",{stationName:COURSE.stn,dataTerm:"DAILY",ver:"1.3"}).catch(()=>null):Promise.resolve(null),
+      shared("getMinuDustFrcstDspth",{searchDate:iso(today)},`airfc_${iso(today)}_${hh}`,AIR_TTL).catch(()=>null),
+      weekOnce(),
+    ]);
+    const now=now0&&now0.length?now0[0]:null;
 
     // 일자별 등급 정리
     const days={};
-    for(const x of fc){
+    for(const x of (fc||[])){
       const d=x.informData, g=pickGrade(x.informGrade,reg);
       if(!d||!g)continue;
       days[d]=days[d]||{};
