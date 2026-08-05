@@ -1373,8 +1373,10 @@ function pickFromDB(i){
 // ── 현장 관측 필드 온도 (세이지우드) ────────────────────
 // 어느 골프장을 조회하든 세이지우드 현재 온도를 기준값으로 함께 표시한다.
 let FIELD=null;
+// 못 가져왔는지 여부. 조용히 사라지면 값이 빠진 것을 알 수 없어 따로 남긴다.
+let FIELD_ERR=null;
 async function loadFieldTemp(){
-  FIELD=null;
+  FIELD=null; FIELD_ERR=null;
   const site=FIELD_SITE;
   if(!site||!FIELD_RELAY)return;                 // 중계 주소 없으면 생략
   const ck="ft_"+site;
@@ -1385,14 +1387,17 @@ async function loadFieldTemp(){
   try{
     const target=`https://www.sagewood.co.kr/api/open/${site}/weather`;
     const r=await fetch(FIELD_RELAY+encodeURIComponent(target),{cache:"no-store"});
-    if(!r.ok)return;
+    if(!r.ok){FIELD_ERR="중계 오류 "+r.status;return;}
     const d=await r.json();
-    if(d&&d.temperature!=null){
-      FIELD={temp:parseFloat(d.temperature),cond:d.weatherCondition||"",
+    const t=d?parseFloat(d.temperature):NaN;
+    if(!isNaN(t)){
+      FIELD={temp:t,cond:d.weatherCondition||"",
              time:d.weatherTime||"",hum:d.humidity,pm25:d.pm25,air:d.airQuality};
       try{localStorage.setItem(ck,JSON.stringify({t:Date.now(),d:FIELD}));}catch(e){}
+    }else{
+      FIELD_ERR="현장 값 없음";
     }
-  }catch(e){/* 중계 실패 시 표시 생략 */}
+  }catch(e){FIELD_ERR="연결 실패";}
 }
 
 // ── 기상청 단기예보 ────────────────────────────────────
@@ -1872,8 +1877,15 @@ async function loadWeather(){
     if(!W.hourly||!W.daily||!Array.isArray(W.hourly.time)
        ||!Array.isArray(W.hourly.temperature_2m))throw new Error("데이터 형식 오류");
     render();
-    await Promise.all([loadFieldTemp(),loadKma(),loadAir()]);
-    if(FIELD||KMA||AIR)render();
+    // 세 곳을 동시에 받되 도착하는 대로 화면을 갱신한다.
+    // 예전에는 Promise.all 로 셋을 다 기다려서, 0.5초면 오는 현장 실측온도가
+    // 기상청이 느린 날에는 10초 가까이 화면에 나타나지 않았다.
+    // 또 한 곳이 예외를 던지면 Promise.all 이 거부되어 앱 전체가 오류 화면으로
+    // 바뀌었다. 이제 실패는 각자 삼키고 나머지는 그대로 보여준다.
+    const paint=()=>{ if(FIELD||FIELD_ERR||KMA||AIR)render(); };
+    const settle=p=>p.catch(()=>{}).then(paint);
+    await Promise.all([settle(loadFieldTemp()),settle(loadKma()),settle(loadAir())]);
+    paint();
   }catch(e){
     setMain(`<div style="padding:4px"><div class="errmsg">
       ⚠️ 날씨를 불러오지 못했습니다.<br>
@@ -1925,7 +1937,8 @@ function render(){
   <div class="cloc"><span class="cnm">📍 ${COURSE.name}</span><span class="cloc-r">${COURSE.address}</span></div>
   <div class="cstamp">${stamp}<span style="font-weight:400;opacity:.8">${COURSE.ele!=null?` · 해발 ${COURSE.ele}m`:""}${cur.src.indexOf("기상청")>=0?" · 🏛️ 기상청":""}</span></div>
   <div class="crow">
-    <div><div class="btlabel">현재온도</div><div class="btemp">${cur.temp}°</div><div class="feel">체감 ${cur.feel}°${FIELD?` · <b style="font-weight:700">세이지우드홍천현장실측온도 ${FIELD.temp.toFixed(1)}°</b>`:""} · ${cur.desc}</div></div>
+    <div><div class="btlabel">현재온도</div><div class="btemp">${cur.temp}°</div><div class="feel">체감 ${cur.feel}°${FIELD?` · <b style="font-weight:700">세이지우드홍천현장실측온도 ${FIELD.temp.toFixed(1)}°</b>`
+      :(FIELD_ERR?` · <span style="opacity:.7">세이지우드 현장온도 불러오지 못함</span>`:"")} · ${cur.desc}</div></div>
     <div class="wico">${cur.icon}</div>
   </div>
   <div class="meta4">
