@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>골프 날씨</title>
 <meta name="description" content="전국 골프장의 예상 날씨(고도 반영)와 기상청 예보를 나란히 비교합니다.">
-<meta name="theme-color" content="#1a4a2e">
+<meta name="theme-color" content="#0a2b4a">
 <!-- 홈 화면 앱(PWA) -->
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -20,34 +20,116 @@
 <meta property="og:description" content="골프장 검색 → 예상 날씨와 기상청 예보 비교. 홈 화면에 추가하면 앱처럼 씁니다.">
 <meta property="og:image" content="icon-512.png">
 <style>
+/* ── 색 팔레트 ────────────────────────────────────────────
+   짙은 남색(신뢰) → 하늘색(날씨) 한 축으로 통일한다.
+   의미색(강수 파랑, 미세먼지 등급, 골프지수)은 알아볼 수 있어야 하므로 건드리지 않는다. */
+:root{
+  --navy:#0a2b4a; --navy2:#123f68;
+  --brand:#15568f; --brand2:#1d74b8;
+  --sky:#3fa3dd;  --sky2:#79c6ea; --sky3:#b3ddf3; --sky4:#dcefFB;
+  --wash:#eef4fa; --line:#d4e3f0; --line2:#e8f1f8;
+  --ink:#0e2334;  --ink2:#3d6183; --ink3:#6f8da8;
+  --rain:#1f6fd0;
+  --shadow:0 2px 10px rgba(10,43,74,.055);
+}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#eef3ee;min-height:100vh;color:#1a2e1a;padding-bottom:40px}
-#hdr{background:#1a4a2e;color:#fff;padding:14px 16px;display:flex;align-items:center;gap:8px}
-#pwaBar{display:none;background:#fffbe8;border-bottom:1px solid #f0dfa8;padding:11px 14px;
-        font-size:13px;line-height:1.6;color:#5a4600}
-#pwaBar b{color:#3a2e00}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+     background:var(--wash);min-height:100vh;color:var(--ink);padding-bottom:44px;
+     -webkit-font-smoothing:antialiased}
+
+/* ── 헤더 ─────────────────────────────────────────────── */
+#hdr{background:linear-gradient(115deg,var(--navy),var(--brand) 78%,var(--brand2));
+     color:#fff;padding:14px 16px;display:flex;align-items:center;gap:9px;
+     box-shadow:0 1px 0 rgba(255,255,255,.14) inset,0 2px 12px rgba(10,43,74,.22);cursor:pointer}
+#hdr h1{font-size:17px;font-weight:600;flex:1;letter-spacing:-.2px}
+#hdr .hdr-s{font-size:11px;color:#b8d8ef;font-weight:500;letter-spacing:.2px}
+
+/* ── 홈 화면 추가 안내 ─────────────────────────────────── */
+#pwaBar{display:none;background:#f2f9fe;border-bottom:1px solid var(--sky3);padding:11px 14px;
+        font-size:13px;line-height:1.6;color:var(--ink2)}
+#pwaBar b{color:var(--brand)}
 #pwaBar .pw-row{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
 #pwaBar button{border:none;border-radius:9px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer}
-#pwaBar .pw-go{background:#1a4a2e;color:#fff}
-#pwaBar .pw-x{background:#ece3c4;color:#5a4600}
-#hdr h1{font-size:17px;font-weight:600;flex:1}
-#srch{background:#fff;padding:12px 14px;border-bottom:1px solid #dde8dd;position:sticky;top:0;z-index:99}
+#pwaBar .pw-go{background:var(--brand);color:#fff}
+#pwaBar .pw-x{background:var(--sky4);color:var(--brand)}
+
+/* ── 검색 ─────────────────────────────────────────────── */
+#srch{background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(12px);
+      padding:12px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:99}
 #srow{display:flex;gap:8px}
-#inp{flex:1;padding:11px 14px;border:1.5px solid #b8ccb8;border-radius:12px;font-size:16px;outline:none;background:#f8fbf8;color:#1a2e1a}
-#inp:focus{border-color:#1a4a2e;background:#fff}
-#goBtn{background:#1a4a2e;color:#fff;border:none;padding:11px 18px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer}
-#slist{margin-top:8px;display:none;background:#fff;border:1px solid #ccdacc;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.12);max-height:300px;overflow-y:auto}
-.si{padding:14px;cursor:pointer;font-size:18px;border-bottom:1px solid #f0f5f0;display:flex;justify-content:space-between;align-items:center;gap:8px}
+#inp{flex:1;padding:11px 14px;border:1.5px solid var(--line);border-radius:12px;font-size:16px;
+     outline:none;background:#f6fafd;color:var(--ink);transition:border-color .15s,background .15s}
+#inp::placeholder{color:var(--ink3)}
+#inp:focus{border-color:var(--sky);background:#fff;box-shadow:0 0 0 3px rgba(63,163,221,.14)}
+#goBtn{background:linear-gradient(140deg,var(--brand),var(--brand2));color:#fff;border:none;
+       padding:11px 18px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer}
+#goBtn:active{transform:scale(.97)}
+#slist{margin-top:8px;display:none;background:#fff;border:1px solid var(--line);border-radius:14px;
+       overflow:hidden;box-shadow:0 8px 28px rgba(10,43,74,.16);max-height:300px;overflow-y:auto}
+.si{padding:14px;cursor:pointer;font-size:18px;border-bottom:1px solid var(--line2);
+    display:flex;justify-content:space-between;align-items:center;gap:8px}
 .si-nm{font-size:18px;font-weight:600;line-height:1.3}
 .si:last-child{border-bottom:none}
-.si:active{background:#f0f7f0}
-.si-loc{font-size:13px;color:#6a8a6a;flex-shrink:0}
+.si:active{background:var(--sky4)}
+.si-loc{font-size:13px;color:var(--ink3);flex-shrink:0}
+
 #main{padding:14px;max-width:600px;margin:0 auto}
-.empty{text-align:center;padding:60px 16px;color:#7a9a7a}
-.loader{text-align:center;padding:34px 16px 30px;border-radius:18px;color:#fff;
-        background:linear-gradient(145deg,#1a4a2e,#2d6b45)}
+.empty{text-align:center;padding:60px 16px;color:var(--ink3)}
+
+/* ── 첫 화면 ──────────────────────────────────────────── */
+.home{animation:homeIn .42s cubic-bezier(.2,.7,.3,1) both}
+@keyframes homeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.hero{position:relative;overflow:hidden;border-radius:22px;padding:24px 20px 20px;color:#fff;
+      background:linear-gradient(155deg,var(--navy) 0%,var(--brand) 54%,var(--brand2) 100%);
+      box-shadow:0 12px 32px rgba(10,43,74,.26)}
+.hero::before{content:"";position:absolute;top:-76px;right:-54px;width:200px;height:200px;border-radius:50%;
+      background:radial-gradient(circle,rgba(121,198,234,.42),transparent 70%)}
+.hero::after{content:"";position:absolute;bottom:-96px;left:-46px;width:190px;height:190px;border-radius:50%;
+      background:radial-gradient(circle,rgba(63,163,221,.26),transparent 70%)}
+.hero>*{position:relative}
+.hero-mark{width:46px;height:46px;border-radius:15px;display:flex;align-items:center;justify-content:center;
+      font-size:25px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.24);margin-bottom:13px}
+.hero-t{font-size:24px;font-weight:700;letter-spacing:-.5px;line-height:1.2}
+.hero-s{font-size:13.5px;line-height:1.65;margin-top:7px;color:#cbe4f7}
+.hero-s b{color:#fff;font-weight:600}
+.hero-st{display:flex;margin-top:17px;border-top:1px solid rgba(255,255,255,.17);padding-top:13px}
+.hero-st div{flex:1;text-align:center;border-left:1px solid rgba(255,255,255,.15)}
+.hero-st div:first-child{border-left:none}
+.hero-st b{display:block;font-size:17px;font-weight:700;letter-spacing:-.3px}
+.hero-st span{font-size:10.5px;color:#b3d5ef;letter-spacing:.2px}
+
+.hlabel{font-size:11.5px;font-weight:700;color:var(--ink3);letter-spacing:.7px;
+        text-transform:uppercase;margin:21px 0 9px}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:13.5px;
+      font-weight:500;color:var(--brand);cursor:pointer;display:inline-flex;align-items:center;gap:5px;
+      box-shadow:var(--shadow);transition:transform .12s,background .12s,border-color .12s}
+.chip:active{background:var(--sky4);border-color:var(--sky2);transform:scale(.96)}
+.chip s{text-decoration:none;font-size:11px;color:var(--ink3);font-weight:400}
+
+.how{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px;margin-top:21px;
+     box-shadow:var(--shadow)}
+.how-t{font-size:14.5px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:7px;margin-bottom:15px}
+.how-l{list-style:none;counter-reset:h}
+.how-l li{counter-increment:h;position:relative;padding:0 0 15px 34px}
+.how-l li:last-child{padding-bottom:2px}
+.how-l li::before{content:counter(h);position:absolute;left:0;top:-1px;width:23px;height:23px;border-radius:50%;
+      background:linear-gradient(140deg,var(--brand2),var(--sky));color:#fff;font-size:11.5px;font-weight:700;
+      display:flex;align-items:center;justify-content:center}
+.how-l li:not(:last-child)::after{content:"";position:absolute;left:11px;top:27px;bottom:1px;width:1.5px;
+      background:linear-gradient(var(--sky3),var(--line2))}
+.how-l b{display:block;font-size:13.5px;font-weight:600;color:var(--ink);margin-bottom:3px}
+.how-l span{display:block;font-size:12px;line-height:1.62;color:var(--ink2)}
+.how-l em{font-style:normal;color:var(--brand2);font-weight:600}
+.how-src{margin-top:4px;padding-top:12px;border-top:1px solid var(--line2);
+         font-size:11px;color:var(--ink3);letter-spacing:.2px;line-height:1.6}
+
+/* ── 로딩 (홀인원 애니메이션) ──────────────────────────── */
+.loader{text-align:center;padding:34px 16px 30px;border-radius:20px;color:#fff;
+        background:linear-gradient(150deg,var(--navy),var(--brand) 60%,var(--brand2));
+        box-shadow:0 12px 30px rgba(10,43,74,.24)}
 .loader .ld-nm{font-size:15px;font-weight:600}
-.loader .ld-sub{font-size:13px;margin-top:4px;opacity:.75}
+.loader .ld-sub{font-size:13px;margin-top:4px;color:#bcdcf2}
 .gload{width:132px;height:92px;margin:0 auto 10px;display:block}
 /* 공이 굴러와 홀에 빠진다 (1.9초 반복)
    SVG 는 transform-box 기본값이 view-box 이므로 transform-origin 을
@@ -86,82 +168,114 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#eef3ee;
   90%{transform:rotate(4deg)}
   100%{transform:rotate(0)}
 }
-}
-.errmsg{background:#fff3f0;border:1px solid #fcc;border-radius:12px;padding:16px;color:#c04020;font-size:14px;line-height:1.7}
-#curCard{background:linear-gradient(145deg,#1a4a2e,#2d6b45);color:#fff;border-radius:18px;padding:18px 16px;margin-bottom:12px}
-.cloc{font-size:13px;opacity:1;margin-bottom:4px;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
-.cnm{font-size:22px;font-weight:700;line-height:1.2}
-.cloc-r{opacity:.75}
-.cstamp{font-size:12px;font-weight:600;opacity:.9;margin-bottom:10px}
+.errmsg{background:#fff5f3;border:1px solid #f6cdc4;border-radius:14px;padding:16px;
+        color:#b13a22;font-size:14px;line-height:1.7}
+
+/* ── 현재 날씨 카드 ───────────────────────────────────── */
+#curCard{position:relative;overflow:hidden;color:#fff;border-radius:20px;padding:18px 16px;margin-bottom:12px;
+         background:linear-gradient(152deg,var(--navy) 0%,var(--brand) 56%,var(--brand2) 100%);
+         box-shadow:0 12px 30px rgba(10,43,74,.24)}
+#curCard::before{content:"";position:absolute;top:-84px;right:-58px;width:210px;height:210px;border-radius:50%;
+         background:radial-gradient(circle,rgba(121,198,234,.34),transparent 70%)}
+#curCard>*{position:relative}
+.cloc{font-size:13px;margin-bottom:4px;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.cnm{font-size:22px;font-weight:700;line-height:1.2;letter-spacing:-.4px}
+.cloc-r{color:#b8d8ef}
+.cstamp{font-size:12px;font-weight:600;color:#cbe4f7;margin-bottom:10px}
 .crow{display:flex;justify-content:space-between;align-items:flex-start}
-.btlabel{font-size:12px;font-weight:600;opacity:.8;margin-bottom:1px}
-.btemp{font-size:56px;font-weight:200;line-height:1}
-.feel{font-size:13px;opacity:.8;margin-top:4px}
+.btlabel{font-size:12px;font-weight:600;color:#bcdcf2;margin-bottom:1px}
+.btemp{font-size:56px;font-weight:200;line-height:1;letter-spacing:-2px}
+.feel{font-size:13px;color:#cbe4f7;margin-top:4px}
 .wico{font-size:52px;line-height:1}
 .meta4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
-.mi{background:rgba(255,255,255,.16);border-radius:10px;padding:10px 6px;text-align:center}
+.mi{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.13);
+    border-radius:11px;padding:10px 6px;text-align:center}
 .mi-v{font-size:15px;font-weight:600}
-.mi-l{font-size:10px;opacity:.8;margin-top:2px}
-#gibox{border-radius:14px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.mi-l{font-size:10px;color:#c3e0f5;margin-top:2px}
+
+/* ── 골프 지수 ────────────────────────────────────────── */
+#gibox{border-radius:16px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px;
+       box-shadow:var(--shadow)}
 .ab-g{display:inline-block;padding:1px 7px;border-radius:6px;font-weight:700;font-size:11.5px}
-.dr-air{font-size:11px;color:#4a6a4a;margin-top:4px;padding-top:4px;border-top:1px dashed #e2ece4}
-.gi-n{font-size:42px;font-weight:700;line-height:1;min-width:56px}
+.dr-air{font-size:11px;color:var(--ink2);margin-top:4px;padding-top:4px;border-top:1px dashed var(--line)}
+.gi-n{font-size:42px;font-weight:700;line-height:1;min-width:56px;letter-spacing:-1.5px}
 .gi-h{font-size:15px;font-weight:600}
 .gi-s{font-size:12px;margin-top:3px;opacity:.85}
+
+/* ── 탭 ───────────────────────────────────────────────── */
 #tabs{display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:2px}
 #tabs::-webkit-scrollbar{display:none}
-.tb{background:#fff;border:1.5px solid #d0ddd0;border-radius:10px;padding:9px 16px;font-size:14px;font-weight:500;color:#4a6a4a;cursor:pointer;white-space:nowrap;flex-shrink:0}
-.tb.on{background:#1a4a2e;color:#fff;border-color:#1a4a2e}
-.sec{font-size:12px;font-weight:600;color:#5a7a5a;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px}
+.tb{background:#fff;border:1.5px solid var(--line);border-radius:11px;padding:9px 16px;font-size:14px;
+    font-weight:500;color:var(--ink2);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:.12s}
+.tb:active{transform:scale(.97)}
+.tb.on{background:linear-gradient(140deg,var(--brand),var(--brand2));color:#fff;border-color:var(--brand);
+       box-shadow:0 3px 10px rgba(21,86,143,.28)}
+.sec{font-size:12px;font-weight:700;color:var(--ink2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px}
+
+/* ── 시간대별 스트립 ──────────────────────────────────── */
 .hscroll{overflow-x:auto;margin-bottom:12px;-webkit-overflow-scrolling:touch}
 .hrow{display:flex;gap:6px;width:max-content;padding-bottom:4px}
-.hc{background:#fff;border:1.5px solid #dde8dd;border-radius:12px;padding:10px 6px;text-align:center;width:74px;flex-shrink:0}
-.hair{font-size:9.5px;margin-top:3px;padding-top:3px;border-top:1px dashed #e6efe6;line-height:1.35}
+.hc{background:#fff;border:1.5px solid var(--line);border-radius:13px;padding:10px 6px;text-align:center;
+    width:74px;flex-shrink:0}
+.hair{font-size:9.5px;margin-top:3px;padding-top:3px;border-top:1px dashed var(--line2);line-height:1.35}
 .hsrc{font-size:8px;color:#b08a3a;margin-left:2px}
-.hair i{font-style:normal;color:#8aa88a;font-size:8.5px;display:block}
-.hc.now{border-color:#1a4a2e;background:#f0f8f2}
-.ht{font-size:11px;color:#6a8a6a;margin-bottom:4px}
+.hair i{font-style:normal;color:var(--ink3);font-size:8.5px;display:block}
+.hc.now{border-color:var(--sky);background:linear-gradient(170deg,#f4fbff,var(--sky4));
+        box-shadow:0 0 0 3px rgba(63,163,221,.13)}
+.ht{font-size:11px;color:var(--ink3);margin-bottom:4px}
 .hico{font-size:20px;margin-bottom:2px}
 .htemp{font-size:14px;font-weight:600}
-.hrain{font-size:11px;color:#2060b0;margin-top:3px}
-.hwind{font-size:10px;color:#6a8a6a;margin-top:2px}
+.hrain{font-size:11px;color:var(--rain);margin-top:3px}
+.hwind{font-size:10px;color:var(--ink3);margin-top:2px}
+.hwind i{font-style:normal;font-size:7.5px;margin-left:1px;opacity:.72;letter-spacing:-.2px}
 .day-sep{display:flex;flex-direction:column;align-items:center;justify-content:center;width:32px;flex-shrink:0}
-.day-sep-inner{writing-mode:vertical-rl;font-size:10px;font-weight:600;color:#1a4a2e;background:#d8f0d0;border-radius:6px;padding:5px 3px;letter-spacing:.5px;white-space:nowrap}
-.dr{background:#fff;border-radius:12px;padding:13px 12px;margin-bottom:8px;border:1.5px solid #dde8dd;cursor:pointer}
-.dr.open{border-color:#1a4a2e}
+.day-sep-inner{writing-mode:vertical-rl;font-size:10px;font-weight:700;color:var(--brand);
+    background:var(--sky4);border:1px solid var(--sky3);border-radius:7px;padding:5px 3px;
+    letter-spacing:.5px;white-space:nowrap}
+
+/* ── 일별 목록 ────────────────────────────────────────── */
+.dr{background:#fff;border-radius:13px;padding:13px 12px;margin-bottom:8px;border:1.5px solid var(--line);
+    cursor:pointer;box-shadow:var(--shadow)}
+.dr.open{border-color:var(--sky);box-shadow:0 0 0 3px rgba(63,163,221,.12)}
 .dr-row{display:flex;align-items:center;gap:8px}
 .dr-date{font-size:13px;font-weight:600;width:76px;flex-shrink:0}
 .dr-ico{font-size:22px;width:28px;text-align:center;flex-shrink:0}
 .dr-mid{flex:1;min-width:0}
 .dr-desc{font-size:13px}
 .gi-badge{display:inline-block;padding:1px 6px;border-radius:6px;font-weight:600;font-size:11px;margin-top:2px}
-.dr-rain{font-size:13px;color:#2060b0;flex-shrink:0;margin-right:4px}
+.dr-rain{font-size:13px;color:var(--rain);flex-shrink:0;margin-right:4px}
 .dr-temps{font-size:14px;font-weight:600;flex-shrink:0;text-align:right;line-height:1.45;min-width:66px}
-.dr-lbl{font-size:9.5px;font-weight:600;color:#8aa88a;letter-spacing:-.3px;margin-right:2px}
-.dr-src{font-size:8.5px;font-weight:600;color:#9ab09a;letter-spacing:-.3px;margin-bottom:1px}
-.legend{font-size:11px;color:#6a8a6a;line-height:1.7;background:#f4f8f4;border:1px solid #e2ece4;
-        border-radius:9px;padding:8px 10px;margin:-2px 0 10px}
-.legend b{color:#3a5a3a}
-.dr-lo{font-size:13px;color:#7a9a7a;font-weight:400}
-.dd{margin-top:10px;background:#f5f9f5;border-radius:10px;padding:10px;display:none;grid-template-columns:1fr 1fr;gap:8px}
+.dr-lbl{font-size:9.5px;font-weight:600;color:var(--ink3);letter-spacing:-.3px;margin-right:2px}
+.dr-src{font-size:8.5px;font-weight:600;color:var(--ink3);letter-spacing:-.3px;margin-bottom:1px}
+.legend{font-size:11px;color:var(--ink2);line-height:1.7;background:#f4fafe;border:1px solid var(--line2);
+        border-radius:11px;padding:9px 11px;margin:-2px 0 10px}
+.legend b{color:var(--brand)}
+.dr-lo{font-size:13px;color:var(--ink3);font-weight:400}
+.dd{margin-top:10px;background:#f6fbfe;border:1px solid var(--line2);border-radius:11px;padding:10px;
+    display:none;grid-template-columns:1fr 1fr;gap:8px}
 .dd.show{display:grid}
-.ddi-l{font-size:11px;color:#6a8a6a}
+.ddi-l{font-size:11px;color:var(--ink3)}
 .ddi-v{font-size:14px;font-weight:600;margin-top:2px}
-.chart-card{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;overflow:hidden}
-.km-note{font-size:11px;color:#6a8a6a;margin:-4px 0 12px;line-height:1.6}
-.dr-kma{font-size:11px;color:#3a5a3a;margin-top:5px;padding-top:5px;border-top:1px dashed #dde8dd}
-.km-warn{background:#fff8e8;border:1px solid #f0dca0;border-radius:10px;padding:10px 12px;font-size:12px;color:#6a5000;line-height:1.6;margin-bottom:12px}
-.chart-t{font-size:13px;font-weight:600;color:#3a5a3a;margin-bottom:10px}
+.dr-kma{font-size:11px;color:var(--ink2);margin-top:5px;padding-top:5px;border-top:1px dashed var(--line)}
+
+/* ── 그래프 ───────────────────────────────────────────── */
+.chart-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;
+            overflow:hidden;box-shadow:var(--shadow)}
+.chart-t{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:10px}
+.km-note{font-size:11px;color:var(--ink2);margin:-4px 0 12px;line-height:1.6}
+.km-warn{background:#fff8e8;border:1px solid #f0dca0;border-radius:12px;padding:10px 12px;font-size:12px;
+         color:#6a5000;line-height:1.6;margin-bottom:12px}
 .bar-wrap{display:flex;align-items:flex-end;gap:5px;height:130px;padding-bottom:22px;width:max-content}
 .bw{display:flex;flex-direction:column;align-items:center;width:34px;flex-shrink:0}
 .bv{font-size:9px;font-weight:600;margin-bottom:2px}
 .bar{border-radius:3px 3px 0 0;width:13px;min-height:3px}
 .bar-wrap>.bw>div>.bar:only-child{width:28px}
-.bl{font-size:9px;color:#5a7a5a;margin-top:3px;transform:rotate(-30deg);transform-origin:top center;white-space:nowrap}
+.bl{font-size:9px;color:var(--ink2);margin-top:3px;transform:rotate(-30deg);transform-origin:top center;
+    white-space:nowrap}
 </style>
 </head>
 <body>
-<div id="hdr"><span style="font-size:20px">⛳</span><h1>골프 날씨</h1></div>
+<div id="hdr" onclick="goHome()"><span style="font-size:20px">⛳</span><h1>골프 날씨</h1><span class="hdr-s">고도 반영 예보</span></div>
 <div id="pwaBar"></div>
 <div id="srch">
   <div id="srow">
@@ -171,10 +285,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#eef3ee;
   <div id="slist"></div>
 </div>
 <div id="main">
+  <!-- JS 가 renderHome() 으로 채운다. 아래는 스크립트 실패 시 대비용. -->
   <div class="empty">
     <div style="font-size:44px;margin-bottom:12px">⛳</div>
-    <p style="font-size:15px;font-weight:500;color:#4a7a4a">골프장을 검색해 주세요</p>
-    <p style="font-size:13px;margin-top:6px">이름 또는 지역으로 찾을 수 있습니다</p>
+    <p style="font-size:15px;font-weight:500">골프장을 검색해 주세요</p>
   </div>
 </div>
 <script>
@@ -731,10 +845,11 @@ function gi(r,w,t,airGrade){
   if(airGrade==="나쁨"||airGrade==="높음")s=Math.min(s,79);      // 최적(80) 불가
   if(airGrade==="매우나쁨")s=Math.min(s,59);                     // 양호(60) 불가
   s=Math.max(0,Math.round(s));
-  if(s>=80)return{s,l:"최적 ⛳",bg:"#c8f0d0",fg:"#0a3a18"};
-  if(s>=60)return{s,l:"양호 👍",bg:"#d8f0c8",fg:"#1a3a0a"};
-  if(s>=40)return{s,l:"보통 😐",bg:"#faf0c0",fg:"#3a3000"};
-  return{s,l:"주의 ⚠️",bg:"#fde0d0",fg:"#3a1000"};
+  // 신호색은 유지하되 초록을 청록 쪽으로 옮겨 파란 테마와 부딪히지 않게 한다
+  if(s>=80)return{s,l:"최적 ⛳",bg:"#c6ecdd",fg:"#07463a"};
+  if(s>=60)return{s,l:"양호 👍",bg:"#dcf0e4",fg:"#15492e"};
+  if(s>=40)return{s,l:"보통 😐",bg:"#fcf0ce",fg:"#5c4600"};
+  return{s,l:"주의 ⚠️",bg:"#fce0d6",fg:"#7a2a12"};
 }
 // ── 기상청 체감온도 ────────────────────────────────────
 // 기상청 정의는 일사량(복사열)을 반영하지 않는다. Open-Meteo 의
@@ -842,8 +957,8 @@ function airGradeOf(isoDate){
 const AIR_LV={"좋음":1,"낮음":1,"보통":2,"나쁨":3,"높음":3,"매우나쁨":4};
 const AIR_H={1:28,2:56,3:84,4:106};
 function airBar(g,label){
-  if(!g)return `<div class="bar" style="height:3px;background:#dde8dd"></div>`;
-  const lv=AIR_LV[g]||1, c=AIR_COLOR[g]||["#eef3ee","#3a5a3a"];
+  if(!g)return `<div class="bar" style="height:3px;background:var(--line)"></div>`;
+  const lv=AIR_LV[g]||1, c=AIR_COLOR[g]||["#eef4fa","var(--ink2)"];
   return `<div class="bar" title="${label} ${g}" style="height:${AIR_H[lv]}px;background:${c[1]};opacity:.85"></div>`;
 }
 // 일별 미세먼지 그래프 + 오존 그래프
@@ -856,7 +971,7 @@ function airCharts(rows,labs,pw){
 
   // 미세먼지 (미세 PM10 / 초미세 PM2.5, 그 뒤 구간은 농도 전망)
   out+=`<div class="chart-card"><div class="chart-t">😷 일별 미세먼지</div>
-  <div style="display:flex;gap:12px;font-size:11.5px;margin-bottom:8px;color:#5a7a5a;flex-wrap:wrap">
+  <div style="display:flex;gap:12px;font-size:11.5px;margin-bottom:8px;color:var(--ink2);flex-wrap:wrap">
     <span>왼쪽 <b>미세</b> · 오른쪽 <b>초미세</b></span>
     <span style="opacity:.8">막대가 높을수록 나쁨 · 예보 없는 날은 농도 전망(낮음/보통/높음)</span>
   </div>
@@ -866,7 +981,7 @@ function airCharts(rows,labs,pw){
     const d=day(D)||{};
     const a=d.pm10, b=d.pm25, w=(!a&&!b)?d.week:null;
     const cap=w?w:[a,b].filter(Boolean).map(g=>g[0]).join("/");
-    out+=`<div class="bw"><div class="bv" style="color:#5a7a5a;font-size:8.5px">${cap||"–"}</div>
+    out+=`<div class="bw"><div class="bv" style="color:var(--ink2);font-size:8.5px">${cap||"–"}</div>
       <div style="display:flex;align-items:flex-end;gap:2px">
         ${w?airBar(w,"농도 전망"):`${airBar(a,"미세")}${airBar(b,"초미세")}`}
       </div>
@@ -877,7 +992,7 @@ function airCharts(rows,labs,pw){
   // 오존
   const hasO3=rows.some(D=>{const d=day(D);return d&&d.o3;});
   out+=`<div class="chart-card"><div class="chart-t">🫧 일별 오존</div>
-  <div style="font-size:11.5px;margin-bottom:8px;color:#5a7a5a">
+  <div style="font-size:11.5px;margin-bottom:8px;color:var(--ink2)">
     ${hasO3?`막대가 높을수록 나쁨 · 여름철 야외 운동에는 미세먼지보다 영향이 클 수 있습니다`
            :`오존 예보는 오늘~모레만 제공됩니다`}
   </div>
@@ -885,7 +1000,7 @@ function airCharts(rows,labs,pw){
   <div class="bar-wrap" style="width:${pw}px">`;
   rows.forEach((D,i)=>{
     const d=day(D)||{};
-    out+=`<div class="bw"><div class="bv" style="color:#5a7a5a;font-size:8.5px">${d.o3||"–"}</div>
+    out+=`<div class="bw"><div class="bv" style="color:var(--ink2);font-size:8.5px">${d.o3||"–"}</div>
       <div style="display:flex;align-items:flex-end">${airBar(d.o3,"오존")}</div>
       <div class="bl">${labs[i]}</div></div>`;
   });
@@ -915,7 +1030,7 @@ function kmaDayLine(isoDate,da,i,D){
   // 중기 구간은 위 예상값이 이미 이 기상청 값에서 나왔으므로 차이 대신 보정량을 보여준다
   if(D&&(D.useMid||D.useSht)){
     const a=D.adj;
-    return `<div class="dr-kma">🏛️ 기상청 <span class="dr-lbl" style="color:#7a8aaa">${D.useMid?"중기":"단기"}·발표값</span>
+    return `<div class="dr-kma">🏛️ 기상청 <span class="dr-lbl" style="color:var(--ink3)">${D.useMid?"중기":"단기"}·발표값</span>
       <span class="dr-lbl">최고</span><b>${Math.round(k.tmx)}°</b>
       <span class="dr-lbl">최저</span><b>${k.tmn!=null?Math.round(k.tmn)+"°":"–"}</b>
       · 💧${k.pop??"–"}% · ${D.useMid?`${midIcon(k.wf)} ${k.wf||""}`:`${kmaIcon(k.sky,k.pty)} ${kmaDesc(k.sky,k.pty)}`}
@@ -925,8 +1040,8 @@ function kmaDayLine(isoDate,da,i,D){
   const d=(a,b)=>(a==null||b==null)?"":` <span style="opacity:.75">(${(a-b)>0?"+":""}${Math.round((a-b)*10)/10})</span>`;
   // 기상청이 최고/최저를 직접 발표하지 않은 날은 * 로 구분
   const mk=v=>v?`<span title="기상청 시간별 값에서 산출한 값" style="opacity:.65">*</span>`:"";
-  const src=k.mid?`<span class="dr-lbl" style="color:#7a8aaa">중기·고도미적용</span>`
-                 :`<span class="dr-lbl" style="color:#7a8aaa">단기·고도미적용</span>`;
+  const src=k.mid?`<span class="dr-lbl" style="color:var(--ink3)">중기·고도미적용</span>`
+                 :`<span class="dr-lbl" style="color:var(--ink3)">단기·고도미적용</span>`;
   return `<div class="dr-kma">🏛️ 기상청 ${src}·
     <span class="dr-lbl">최고</span><b>${k.tmx!=null?Math.round(k.tmx)+"°":"–"}</b>${mk(k.tmxD)}${d(k.tmx,om_x)}
     <span class="dr-lbl">최저</span><b>${k.tmn!=null?Math.round(k.tmn)+"°":"–"}</b>${mk(k.tmnD)}${d(k.tmn,om_n)}
@@ -1005,6 +1120,85 @@ function golfLoader(){
       </g></g></g></g>
     </g>
   </svg>`;
+}
+// ── 첫 화면 ────────────────────────────────────────────
+// 검색 전 화면. 비어 보이지 않도록 ① 바로 누를 수 있는 골프장
+// ② 이 앱이 날씨를 어떻게 만드는지 요약 두 가지를 둔다.
+const RECENT_KEY="recent5", RECENT_MAX=5;
+function recentGet(){
+  try{
+    const v=JSON.parse(localStorage.getItem(RECENT_KEY)||"[]");
+    if(!Array.isArray(v))return [];
+    // DB 가 갱신되어 사라진 이름은 걸러낸다
+    return v.filter(n=>DB.some(r=>r[0]===n)).slice(0,RECENT_MAX);
+  }catch(e){return [];}
+}
+function recentPut(name){
+  try{
+    const v=[name].concat(recentGet().filter(n=>n!==name));
+    localStorage.setItem(RECENT_KEY,JSON.stringify(v.slice(0,RECENT_MAX)));
+  }catch(e){}
+}
+function pickByName(n){
+  const i=DB.findIndex(r=>r[0]===n);
+  if(i>=0)pickFromDB(i);
+}
+// 첫 화면 예시. 지역·고도가 서로 다른 곳을 골라 고도 보정 효과가 드러나게 한다.
+const HOME_EX=["세이지우드 CC 홍천","하이원 CC","오크밸리 CC","레이크사이드 CC","남춘천 CC"];
+function chipHtml(name,icon){
+  const r=DB.find(x=>x[0]===name);
+  if(!r)return "";
+  const safe=name.replace(/'/g,"\\'");
+  return `<div class="chip" onclick="pickByName('${safe}')">${icon||""}${name}<s>${r[1]}</s></div>`;
+}
+function renderHome(){
+  W=null;COURSE=null;
+  const rc=recentGet();
+  const ex=HOME_EX.filter(n=>!rc.includes(n)).slice(0,rc.length?3:5);
+  setMain(`<div class="home">
+    <div class="hero">
+      <div class="hero-mark">⛳</div>
+      <div class="hero-t">골프장 날씨</div>
+      <p class="hero-s">기상청 예보를 받아 <b>코스의 해발고도</b>까지 반영합니다.<br>
+        산 위 코스는 예보보다 서늘합니다.</p>
+      <div class="hero-st">
+        <div><b>${DB.length}</b><span>골프장</span></div>
+        <div><b>72</b><span>시간대별</span></div>
+        <div><b>10</b><span>일 예보</span></div>
+      </div>
+    </div>
+
+    ${rc.length?`<div class="hlabel">최근 본 골프장</div>
+    <div class="chips">${rc.map(n=>chipHtml(n,"🕘 ")).join("")}</div>`:""}
+
+    <div class="hlabel">${rc.length?"이런 곳도 있습니다":"눌러서 바로 확인"}</div>
+    <div class="chips">${ex.map(n=>chipHtml(n)).join("")}</div>
+
+    <div class="how">
+      <div class="how-t">🛠️ 날씨를 이렇게 만듭니다</div>
+      <ol class="how-l">
+        <li><b>기상청 예보를 받습니다</b>
+          <span>3일 이내는 <em>초단기·단기예보</em>(5km 격자), 4~10일은 <em>중기예보</em>를 씁니다.
+          기온·하늘상태·강수확률·풍속 모두 기상청 발표값입니다.</span></li>
+        <li><b>골프장 고도로 보정합니다</b>
+          <span>해발이 100m 높아지면 기온은 약 <em>0.65°C</em> 낮아집니다.
+          코스 해발과 예보지점 고도의 차이만큼 더하거나 뺍니다.</span></li>
+        <li><b>미세먼지·오존을 더합니다</b>
+          <span>에어코리아 권역 예보입니다. 4~5시간 야외에 머무는 운동이라
+          <em>골프지수</em> 점수에도 반영합니다.</span></li>
+        <li><b>빈 시간만 예보 모델로 채웁니다</b>
+          <span>기상청 자료가 없는 칸에만 ICON 모델 값을 쓰고 <em>모델</em> 이라고 표시합니다.
+          어디서 온 값인지 늘 구분해 보여줍니다.</span></li>
+      </ol>
+      <p class="how-src">출처 · 기상청 동네예보·중기예보 · 에어코리아 · Open-Meteo(ICON)</p>
+    </div>
+  </div>`);
+}
+function goHome(){
+  const el=document.getElementById("inp");
+  if(el)el.value="";
+  setSlist("",false);
+  renderHome();
 }
 function setMain(html){
   const el=document.getElementById("main");
@@ -1129,7 +1323,7 @@ function searchDB(raw){
 function showSuggestions(q){
   const idx=searchDB(q);
   if(!idx.length){
-    setSlist(`<div class="si" style="color:#8aa88a;justify-content:center">검색 결과가 없습니다</div>`,true);
+    setSlist(`<div class="si" style="color:var(--ink3);justify-content:center">검색 결과가 없습니다</div>`,true);
     return;
   }
   setSlist(idx.map(i=>{
@@ -1148,7 +1342,7 @@ function highlight(name,q){
   for(const p of t.split(/\s+/).filter(Boolean)){
     if(!p)continue;
     name=name.replace(new RegExp(`(${esc(p)})`,"gi"),
-      '<span style="color:#1a4a2e;font-weight:700">$1</span>');
+      '<span style="color:var(--brand);font-weight:700">$1</span>');
   }
   return name;
 }
@@ -1168,6 +1362,7 @@ document.addEventListener("click",e=>{
 function pickFromDB(i){
   const c=DB[i];
   COURSE={name:c[0],address:c[1],lat:c[2],lon:c[3],ele:c[4],midTa:c[5]||null,stn:c[6]||null};
+  recentPut(c[0]);
   inp.value=c[0];
   setSlist("",false);
   SCROLL_X=0;
@@ -1524,8 +1719,13 @@ const AIR_COLOR={"좋음":["#d8f0e0","#0a4a20"],"보통":["#dbeaf8","#0f3a66"],
                  "낮음":["#d8f0e0","#0a4a20"],"높음":["#fde8d0","#7a3a00"]};
 function airChip(g){
   if(!g)return "";
-  const c=AIR_COLOR[g]||["#eef3ee","#3a5a3a"];
+  const c=AIR_COLOR[g]||["#eef4fa","var(--ink2)"];
   return `<span class="ab-g" style="background:${c[0]};color:${c[1]}">${g}</span>`;
+}
+// 발표시각("2026-08-04 23시 발표")을 비교 가능한 숫자 2026080423 으로 바꾼다
+function frcstRank(dataTime){
+  const m=/(\d{4})-(\d{2})-(\d{2})\s*(\d{1,2})\s*시/.exec(dataTime||"");
+  return m?Number(m[1]+m[2]+m[3]+m[4].padStart(2,"0")):-1;
 }
 // 권역 문자열에서 우리 권역의 등급만 뽑는다
 function pickGrade(str,reg){
@@ -1599,15 +1799,20 @@ async function loadAir(){
     ]);
     const now=now0&&now0.length?now0[0]:null;
 
-    // 일자별 등급 정리
-    const days={};
+    // 일자별 등급 정리.
+    // 응답 하나에 하루 4회(05·11·17·23시) 발표분이 모두 들어 있고 최신 발표가 앞쪽에 온다.
+    // 그냥 순회하며 덮어쓰면 가장 오래된 발표가 남으므로 발표시각을 비교해 최신만 채택한다.
+    // '값이 있는 최신 발표'를 골라야 한다. 오존은 저녁 발표에서 '오늘' 항목이 빠지는데
+    // (해가 진 뒤엔 예보 의미가 없다) 무조건 최신을 쓰면 오늘 오존이 사라진다.
+    const FC_FIELD={PM10:"pm10",PM25:"pm25",O3:"o3"};
+    const days={},picked={};
     for(const x of (fc||[])){
-      const d=x.informData, g=pickGrade(x.informGrade,reg);
-      if(!d||!g)continue;
-      days[d]=days[d]||{};
-      if(x.informCode==="PM10")days[d].pm10=g;
-      else if(x.informCode==="PM25")days[d].pm25=g;
-      else if(x.informCode==="O3")days[d].o3=g;
+      const d=x.informData, f=FC_FIELD[x.informCode], g=pickGrade(x.informGrade,reg);
+      if(!d||!f||!g)continue;
+      const r=frcstRank(x.dataTime), sk=d+"|"+f;
+      if(picked[sk]!=null&&picked[sk]>=r)continue;
+      picked[sk]=r;
+      (days[d]=days[d]||{})[f]=g;
     }
     // 주간예보(낮음/보통/높음)로 D+3 이후 보강
     if(wk){
@@ -1625,7 +1830,9 @@ async function loadAir(){
                pm25:now.pm25Value,pm25g:AIR_GRADE[now.pm25Grade]||null,
                time:now.dataTime}:null,
       days,
-      base:(fc&&fc.length)?fc[0].dataTime:null,
+      base:(fc&&fc.length)
+        ?fc.reduce((a,b)=>frcstRank(b.dataTime)>frcstRank(a.dataTime)?b:a).dataTime
+        :null,
       wkNote:wk?wk.gwthcnd:null
     };
     try{localStorage.setItem(ck,JSON.stringify({t:Date.now(),d:AIR}));}catch(e){}
@@ -1672,7 +1879,7 @@ async function loadWeather(){
       ⚠️ 날씨를 불러오지 못했습니다.<br>
       <small style="opacity:.8">${e.message}</small><br><br>
       인터넷 연결을 확인하고<br>
-      <button onclick="loadWeather()" style="background:#1a4a2e;color:#fff;border:none;padding:9px 20px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-top:4px">다시 시도</button>
+      <button onclick="loadWeather()" style="background:var(--brand);color:#fff;border:none;padding:9px 20px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-top:4px">다시 시도</button>
     </div></div>`);
   }
 }
@@ -1758,7 +1965,7 @@ function render(){
           <div class="hico">${r.icon}</div>
           <div class="htemp">${r.val}</div>
           <div class="hrain">💧${r.pop}</div>
-          <div class="hwind">🌬️${r.wind}</div>
+          <div class="hwind">🌬️${r.wind}<i>m/s</i></div>
           ${airCell(r.iso)}
         </div>`;
       });
@@ -1774,7 +1981,7 @@ function render(){
       t:u.t,iso:u.iso,icon:u.icon,
       val:Math.round(u.tmp)+"°",
       pop:u.pop+"%", wind:fmtWind(u.wind),
-      mark:u.src==="초단기"?`<span title="초단기예보" style="color:#1a7a4a">·</span>`
+      mark:u.src==="초단기"?`<span title="초단기예보" style="color:var(--brand2)">·</span>`
           :(u.src==="모델"?`<span class="hsrc">모델</span>`:""),
     })));
   }
@@ -1825,7 +2032,7 @@ function render(){
     DSHOW.forEach((D)=>{
       const t=D.t,i=D.i;
       const dt=new Date(t+"T12:00:00");
-      const dc=dt.getDay()===0?"#c02020":dt.getDay()===6?"#2060c0":"#1a2e1a";
+      const dc=dt.getDay()===0?"#c02020":dt.getDay()===6?"#2060c0":"var(--ink)";
       const g2=gi(D.pop,D.wind,D.tmax??20,airGradeOf(t));
       const isOpen=OPEN===i;
       html+=`<div class="dr${isOpen?" open":""}" onclick="toggleDay(${i})">
@@ -1877,7 +2084,7 @@ function render(){
     const kpop=DSHOW.map(D=>{const k=kmaDay(D.t);return k&&k.pop!=null?k.pop:null;});
     const hasK=KMA_KEY&&KMA&&!KMA.error&&kmx.some(v=>v!=null);
     html+=`<div class="chart-card"><div class="chart-t">💧 일별 강수확률 (%)</div>
-    <div style="display:flex;gap:12px;font-size:11.5px;margin-bottom:8px;color:#5a7a5a;flex-wrap:wrap">
+    <div style="display:flex;gap:12px;font-size:11.5px;margin-bottom:8px;color:var(--ink2);flex-wrap:wrap">
       <span><span style="color:#3080d0">■</span> 기상청 기준</span>
       ${hasK?`<span><span style="color:#0a3a6a">■</span> 기상청(단기+중기, 10일)</span>`:""}
     </div>
@@ -1895,7 +2102,7 @@ function render(){
     html+=`</div></div></div>`;
 
     html+=`<div class="chart-card"><div class="chart-t">🌡️ 일별 최고·최저 기온 (°C)</div>
-    <div style="display:flex;gap:12px;font-size:11.5px;margin-bottom:8px;color:#5a7a5a;flex-wrap:wrap">
+    <div style="display:flex;gap:12px;font-size:11.5px;margin-bottom:8px;color:var(--ink2);flex-wrap:wrap">
       <span><span style="color:#c03020">●</span> 최고</span>
       <span><span style="color:#2060c0">●</span> 최저</span>
       ${hasK?`<span><span style="color:#c03020">┈</span> 최고(기상청 발표값)</span>
@@ -1912,7 +2119,7 @@ function render(){
       ${DSHOW.map((d,i)=>d.tmin==null?"":`<circle cx="${tx(i)}" cy="${ty(d.tmin)}" r="3" fill="#2060c0"/><text x="${tx(i)}" y="${ty(d.tmin)+13}" text-anchor="middle" font-size="9" fill="#2060c0">${Math.round(d.tmin)}°</text>`).join("")}
     </svg>
     <div style="display:flex;gap:${gap}px;width:${pw}px;padding-top:4px">
-      ${labs.map(l=>`<div style="width:${bw}px;flex-shrink:0;text-align:center;font-size:9px;color:#5a7a5a">${l}</div>`).join("")}
+      ${labs.map(l=>`<div style="width:${bw}px;flex-shrink:0;text-align:center;font-size:9px;color:var(--ink2)">${l}</div>`).join("")}
     </div></div></div>`;
 
     html+=airCharts(DSHOW,labs,pw);
@@ -2000,6 +2207,7 @@ function pwaOpenExternal(){
   location.href="kakaotalk://web/openExternal?url="+encodeURIComponent(u);
 }
 showPwaBar();
+renderHome();
 </script>
 
 
