@@ -1910,9 +1910,18 @@ function render(){
   const u0=UH[0]||{};
   const ob=(KMA&&!KMA.error&&KMA.now)?KMA.now:null;
   const SADJ=shtTempAdj();
-  const curT=ob&&ob.tmp!=null?ob.tmp+SADJ:u0.tmp;
-  const curH=ob&&ob.reh!=null?ob.reh:u0.reh;
+  const kmaT=ob&&ob.tmp!=null?ob.tmp+SADJ:u0.tmp;
+  const kmaH=ob&&ob.reh!=null?ob.reh:u0.reh;
   const curW=ob&&ob.wsd!=null?ob.wsd:u0.wind;   // m/s
+  // 세이지우드를 보는 중이고 현장 실측값이 있으면, 대표 '현재온도'는 격자 추정치가 아니라
+  // 코스에서 직접 잰 실측값을 쓴다 — 2026-08-04 관측 결과 격자 추정과 최대 3.9°C 까지
+  // 벌어졌고(고도차로는 0.4°C 밖에 안 설명됨) 사용자가 실측값을 기준으로 쓰기로 결정했다.
+  // 습도도 센서값이 있으면 그걸 쓴다(체감온도 계산에 같이 들어간다). 풍속은 센서가 안 재서
+  // 그대로 기상청/모델 값을 쓴다. 다른 골프장을 볼 때는 이 분기를 안 타 기존 동작 그대로다.
+  const isSagewood=COURSE.name==="세이지우드 CC 홍천";
+  const useField=isSagewood&&FIELD&&FIELD.temp!=null;
+  const curT=useField?FIELD.temp:kmaT;
+  const curH=useField&&FIELD.hum!=null?FIELD.hum:kmaH;
   const cur={
     temp:Math.round(curT),
     feel:Math.round(feelTemp(curT,curH,curW!=null?curW*3.6:null,new Date(hi.time[h0]))),
@@ -1924,7 +1933,8 @@ function render(){
     desc:u0.desc||"",
     uv:u0.uv,
     // 실황은 소수점 첫째 자리까지 발표되므로 출처 표기에 정확한 값을 함께 보여준다
-    src:ob?`기상청 실황 ${ob.tmp.toFixed(1)}°${SADJ?` · 고도보정 ${SADJ>0?"+":""}${SADJ.toFixed(1)}°`:""}`
+    src:useField?`세이지우드 현장 실측 ${FIELD.temp.toFixed(1)}°${FIELD.time?` (${FIELD.time})`:""}`
+        :ob?`기상청 실황 ${ob.tmp.toFixed(1)}°${SADJ?` · 고도보정 ${SADJ>0?"+":""}${SADJ.toFixed(1)}°`:""}`
         :(u0.src==="모델"?"예보 모델":"기상청 "+(u0.src||"")),
   };
   const airG=airWorstToday();
@@ -1936,10 +1946,11 @@ function render(){
   let html=`
 <div id="curCard">
   <div class="cloc"><span class="cnm">📍 ${COURSE.name}</span><span class="cloc-r">${COURSE.address}</span></div>
-  <div class="cstamp">${stamp}<span style="font-weight:400;opacity:.8">${COURSE.ele!=null?` · 해발 ${COURSE.ele}m`:""}${cur.src.indexOf("기상청")>=0?" · 🏛️ 기상청":""}</span></div>
+  <div class="cstamp">${stamp}<span style="font-weight:400;opacity:.8">${COURSE.ele!=null?` · 해발 ${COURSE.ele}m`:""}${useField?" · 📡 현장실측":(cur.src.indexOf("기상청")>=0?" · 🏛️ 기상청":"")}</span></div>
   <div class="crow">
-    <div><div class="btlabel">현재온도</div><div class="btemp">${cur.temp}°</div><div class="feel">체감 ${cur.feel}°${FIELD?` · <b style="font-weight:700">세이지우드홍천현장실측온도 ${FIELD.temp.toFixed(1)}°</b>`
-      :(FIELD_ERR?` · <span style="opacity:.7">세이지우드 현장온도 불러오지 못함</span>`:"")} · ${cur.desc}</div></div>
+    <div><div class="btlabel">현재온도</div><div class="btemp">${cur.temp}°</div><div class="feel">체감 ${cur.feel}°${useField?` · <span style="opacity:.7">기상청 추정 ${Math.round(kmaT)}°</span>`
+      :(FIELD?` · <b style="font-weight:700">세이지우드홍천현장실측온도 ${FIELD.temp.toFixed(1)}°</b>`
+      :(FIELD_ERR?` · <span style="opacity:.7">세이지우드 현장온도 불러오지 못함</span>`:""))} · ${cur.desc}</div></div>
     <div class="wico">${cur.icon}</div>
   </div>
   <div class="meta4">
@@ -1948,7 +1959,7 @@ function render(){
     <div class="mi"><div class="mi-v" style="font-size:12px">${wd(cur.wdir)}</div><div class="mi-l">🧭풍향</div></div>
     <div class="mi"><div class="mi-v">${cur.uv!=null?cur.uv.toFixed(1):"-"}</div><div class="mi-l">☀️UV</div></div>
   </div>
-  <div style="margin-top:10px;font-size:11px;opacity:.55;text-align:right">${FIELD?`세이지우드 현장관측 ${FIELD.time} · `:""}${cur.src} · ${updated} 갱신</div>
+  <div style="margin-top:10px;font-size:11px;opacity:.55;text-align:right">${(FIELD&&!useField)?`세이지우드 현장관측 ${FIELD.time} · `:""}${cur.src} · ${updated} 갱신</div>
 </div>
 <div id="gibox" style="background:${g.bg};color:${g.fg}">
   <div class="gi-n">${g.s}</div>
