@@ -794,7 +794,7 @@ const KMA_TTL=30*60*1000;     // 30분 캐시 (기상청 발표 주기 3시간)
 //   UV, 8일 이후                → best_match
 // 로 채운다.
 const OM_MODELS="icon_seamless,best_match";
-const OM_H=["temperature_2m","relative_humidity_2m","precipitation_probability",
+const OM_H=["temperature_2m","relative_humidity_2m","precipitation_probability","precipitation",
             "weathercode","windspeed_10m","winddirection_10m","uv_index"];
 const OM_D=["weathercode","temperature_2m_max","temperature_2m_min","precipitation_sum",
             "precipitation_probability_max","windspeed_10m_max","winddirection_10m_dominant",
@@ -1071,6 +1071,7 @@ function unifiedHourly(hi,h0,totalH){
       icon:useK?kmaIcon(k.sky,k.pty):(WIC[hi.weathercode?.[i]]||"🌡️"),
       desc:useK?kmaDesc(k.sky,k.pty):(WMO[hi.weathercode?.[i]]||""),
       uv:hi.uv_index?.[i],                 // UV 는 기상청이 주지 않아 모델값
+      rainAmt:hi.precipitation?.[i]??0,    // 강수량(mm) — 기상청은 범위 문구(PCP)만 줘서 항상 모델값
       src:useK?(k.src||"기상청"):"모델",
     });
   }
@@ -1913,6 +1914,8 @@ function render(){
   const kmaT=ob&&ob.tmp!=null?ob.tmp+SADJ:u0.tmp;
   const kmaH=ob&&ob.reh!=null?ob.reh:u0.reh;
   const curW=ob&&ob.wsd!=null?ob.wsd:u0.wind;   // m/s
+  // 강수량(mm). 실황(RN1, 지난 1시간 실측)이 있으면 그것을, 없으면 모델 예보값을 쓴다.
+  const curRainAmt=ob&&ob.rn1!=null&&!isNaN(ob.rn1)?ob.rn1:(u0.rainAmt??0);
   // 세이지우드를 보는 중이고 현장 실측값이 있으면, 대표 '현재온도'는 격자 추정치가 아니라
   // 코스에서 직접 잰 실측값을 쓴다 — 2026-08-04 관측 결과 격자 추정과 최대 3.9°C 까지
   // 벌어졌고(고도차로는 0.4°C 밖에 안 설명됨) 사용자가 실측값을 기준으로 쓰기로 결정했다.
@@ -1927,6 +1930,7 @@ function render(){
     feel:Math.round(feelTemp(curT,curH,curW!=null?curW*3.6:null,new Date(hi.time[h0]))),
     hum:curH,
     rain:u0.pop??0,
+    rainAmt:curRainAmt,
     wind:fmtWind(curW??0),
     wdir:u0.wdir??0,
     icon:u0.icon||"🌡️",
@@ -1954,7 +1958,8 @@ function render(){
     <div class="wico">${cur.icon}</div>
   </div>
   <div class="meta4">
-    <div class="mi"><div class="mi-v">${cur.rain}%</div><div class="mi-l">💧강수확률</div></div>
+    <div class="mi"><div class="mi-v">${cur.rain}%</div><div class="mi-l">💧강수확률</div>
+      <div class="mi-l" style="margin-top:2px">☔${cur.rainAmt.toFixed(1)}mm</div></div>
     <div class="mi"><div class="mi-v">${cur.wind}</div><div class="mi-l">🌬️풍속m/s</div></div>
     <div class="mi"><div class="mi-v" style="font-size:12px">${wd(cur.wdir)}</div><div class="mi-l">🧭풍향</div></div>
     <div class="mi"><div class="mi-v">${cur.uv!=null?cur.uv.toFixed(1):"-"}</div><div class="mi-l">☀️UV</div></div>
@@ -1990,6 +1995,7 @@ function render(){
           <div class="hico">${r.icon}</div>
           <div class="htemp">${r.val}</div>
           <div class="hrain">💧${r.pop}</div>
+          <div class="hrain" style="opacity:.75">☔${r.rain}mm</div>
           <div class="hwind">🌬️${r.wind}<i>m/s</i></div>
           ${airCell(r.iso)}
         </div>`;
@@ -1998,14 +2004,15 @@ function render(){
     };
     // 위: 기상청 + 코스 고도 보정
     html+=`<div class="sec">🏛️ 기상청 + 고도 적용 · 시간대별 최대 72시간</div>
-    <div class="legend">칸마다 위에서부터 &nbsp;<b>시각</b> · <b>날씨</b> · <b>기온</b> · <b>💧강수확률</b> · <b>🌬️풍속(m/s)</b> · <b>미세</b> · <b>오존</b>
+    <div class="legend">칸마다 위에서부터 &nbsp;<b>시각</b> · <b>날씨</b> · <b>기온</b> · <b>💧강수확률</b> · <b>☔강수량(mm)</b> · <b>🌬️풍속(m/s)</b> · <b>미세</b> · <b>오존</b>
     <br><span style="opacity:.85">기상청 발표값에 코스 해발 ${COURSE.ele}m 보정 ${SADJ>=0?"+":""}${SADJ.toFixed(1)}° 를 적용한 값입니다.
     (기상청 5km 격자에도 지형고도가 일부 반영되어 있어 보정폭이 크지 않습니다.)
+    강수량(mm)은 기상청이 숫자로 주지 않아 항상 예보 모델 값입니다.
     ${nMdl?`기상청 자료가 없는 ${nMdl}칸은 예보 모델(<b>모델</b> 표시)입니다.`:""}</span></div>`;
     html+=strip(UH.map(u=>({
       t:u.t,iso:u.iso,icon:u.icon,
       val:Math.round(u.tmp)+"°",
-      pop:u.pop+"%", wind:fmtWind(u.wind),
+      pop:u.pop+"%", rain:u.rainAmt.toFixed(1), wind:fmtWind(u.wind),
       mark:u.src==="초단기"?`<span title="초단기예보" style="color:var(--brand2)">·</span>`
           :(u.src==="모델"?`<span class="hsrc">모델</span>`:""),
     })));
@@ -2045,7 +2052,7 @@ function render(){
   if(TAB==="daily"){
     html+=`<div class="sec">🏛️ 기상청 + 고도 적용 · ${DSHOW.length}일 예보 (클릭 시 상세)</div>`;
     html+=`<div class="legend">
-      각 줄 왼쪽부터 &nbsp;<b>날짜</b> · <b>날씨</b>와 <b>골프지수</b> · <b>💧강수확률</b> ·
+      각 줄 왼쪽부터 &nbsp;<b>날짜</b> · <b>날씨</b>와 <b>골프지수</b> · <b>💧강수확률·강수량(mm)</b> ·
       <b>최고/최저 기온</b>
       <br><span style="opacity:.85">기온은 모두 기상청 발표값에 코스 해발 ${COURSE.ele}m 보정을 적용한 값입니다 —
       단기예보(0~3일) ${SADJ>=0?"+":""}${SADJ.toFixed(1)}° · 중기예보(4~10일) ${MADJ>=0?"+":""}${MADJ.toFixed(1)}°.
@@ -2068,7 +2075,7 @@ function render(){
             <div class="dr-desc">${D.desc}</div>
             <span class="gi-badge" style="background:${g2.bg};color:${g2.fg}">${g2.s}점 ${g2.l}</span>
           </div>
-          <div class="dr-rain">💧${D.pop}%</div>
+          <div class="dr-rain">💧${D.pop}%<br><span style="font-size:10px;opacity:.8">${(da.precipitation_sum?.[D.i]??0).toFixed(1)}mm</span></div>
           <div class="dr-temps"><div class="dr-src">${D.src}</div>
             <span class="dr-lbl">최고</span>${D.tmax!=null?Math.round(D.tmax)+"°":"–"}<br>
             <span class="dr-lbl">최저</span><span class="dr-lo">${D.tmin!=null?Math.round(D.tmin)+"°":"–"}</span></div>
@@ -2108,7 +2115,7 @@ function render(){
     const kmn=DSHOW.map(D=>{const k=kmaDay(D.t);return k&&k.tmn!=null?k.tmn:null;});
     const kpop=DSHOW.map(D=>{const k=kmaDay(D.t);return k&&k.pop!=null?k.pop:null;});
     const hasK=KMA_KEY&&KMA&&!KMA.error&&kmx.some(v=>v!=null);
-    html+=`<div class="chart-card"><div class="chart-t">💧 일별 강수확률 (%)</div>
+    html+=`<div class="chart-card"><div class="chart-t">💧 일별 강수확률 (%) · 강수량(mm)</div>
     <div style="display:flex;gap:12px;font-size:11.5px;margin-bottom:8px;color:var(--ink2);flex-wrap:wrap">
       <span><span style="color:#3080d0">■</span> 기상청 기준</span>
       ${hasK?`<span><span style="color:#0a3a6a">■</span> 기상청(단기+중기, 10일)</span>`:""}
@@ -2116,12 +2123,13 @@ function render(){
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
     <div class="bar-wrap" style="width:${pw}px">`;
     DSHOW.forEach((D,i)=>{
-      const v=D.pop, kv=kpop[i];
+      const v=D.pop, kv=kpop[i], mm=(da.precipitation_sum?.[D.i]??0).toFixed(1);
       html+=`<div class="bw"><div class="bv" style="color:#2060b0">${v??0}%${kv!=null?`<span style="color:#0a3a6a">/${kv}</span>`:""}</div>
         <div style="display:flex;align-items:flex-end;gap:2px">
           <div class="bar" style="width:${kv!=null?13:28}px;height:${Math.max(3,v??0)}px;background:#3080d0"></div>
           ${kv!=null?`<div class="bar" style="width:13px;height:${Math.max(3,kv)}px;background:#0a3a6a"></div>`:""}
         </div>
+        <div style="font-size:9px;color:var(--ink3);margin-top:2px">☔${mm}mm</div>
         <div class="bl">${labs[i]}</div></div>`;
     });
     html+=`</div></div></div>`;
