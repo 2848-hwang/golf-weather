@@ -1071,7 +1071,10 @@ function unifiedHourly(hi,h0,totalH){
       icon:useK?kmaIcon(k.sky,k.pty):(WIC[hi.weathercode?.[i]]||"🌡️"),
       desc:useK?kmaDesc(k.sky,k.pty):(WMO[hi.weathercode?.[i]]||""),
       uv:hi.uv_index?.[i],                 // UV 는 기상청이 주지 않아 모델값
-      rainAmt:hi.precipitation?.[i]??0,    // 강수량(mm) — 기상청은 범위 문구(PCP)만 줘서 항상 모델값
+      // 강수량(mm). 기상청 PCP/RN1(문구를 숫자로 환산, pcpMm)이 있으면 그걸 쓴다 — 네이버
+      // 등 다른 기상청 기반 서비스와 값이 어긋나던 원인이 예보 모델(Open-Meteo) 고정
+      // 사용이었다(2026-09-01). 기상청 범위 밖(11일~ 사실상 이 배열 범위 밖)만 모델로 남는다.
+      rainAmt:(useK&&k.pcp!=null)?k.pcp:(hi.precipitation?.[i]??0),
       src:useK?(k.src||"기상청"):"모델",
     });
   }
@@ -1456,6 +1459,18 @@ function kmaIcon(sky,pty){
   if(pty&&pty!=="0")return KPTY_IC[pty]||"🌧️";
   return KSKY_IC[sky]||"🌡️";
 }
+// 기상청 강수량(PCP/RN1)은 숫자가 아니라 문구다 — 30mm 미만은 대개 "2.0mm" 처럼 정확한
+// 값이지만, "강수없음"/"1mm 미만"/"30.0~50.0mm"/"50.0mm 이상" 같은 구간 표현도 섞여 있다.
+// 소숫점 한 자리 숫자로 보여줘야 해서(사용자 지정) 구간은 중간값으로 환산한다 — 근사치라는
+// 뜻이므로 정확한 mm 가 필요하면 이 값 대신 원문 문구를 봐야 한다는 점을 문서에 남겨둔다.
+function pcpMm(s){
+  if(!s||s==="강수없음")return 0;
+  if(s.indexOf("미만")>=0)return 0.5;
+  const range=/^([\d.]+)\s*~\s*([\d.]+)/.exec(s);
+  if(range)return (parseFloat(range[1])+parseFloat(range[2]))/2;
+  const m=/^([\d.]+)/.exec(s);            // "2.0mm" · "50.0mm 이상"(하한을 취함)
+  return m?parseFloat(m[1]):null;
+}
 
 let KMA=null;
 // {hourly:{"YYYYMMDDHH":{tmp,pop,sky,pty,wsd,reh,src}}, daily:{...}, now:{...}, base, nx, ny}
@@ -1626,6 +1641,7 @@ async function loadKma(){
       case "PTY": put(k,"pty",String(v),"단기"); break;
       case "WSD": put(k,"wsd",parseFloat(v),"단기"); break;
       case "REH": put(k,"reh",parseInt(v,10),"단기"); break;
+      case "PCP": put(k,"pcp",pcpMm(v),"단기"); break;
       case "TMN": (daily[it.fcstDate]=daily[it.fcstDate]||{}).tmn=parseFloat(v); break;
       case "TMX": (daily[it.fcstDate]=daily[it.fcstDate]||{}).tmx=parseFloat(v); break;
     }
@@ -1639,6 +1655,7 @@ async function loadKma(){
       case "PTY": put(k,"pty",String(v),"초단기"); break;
       case "WSD": put(k,"wsd",parseFloat(v),"초단기"); break;
       case "REH": put(k,"reh",parseInt(v,10),"초단기"); break;
+      case "RN1": put(k,"pcp",pcpMm(v),"초단기"); break;
     }
   }
   // 초단기실황 = 현재 관측값
@@ -1664,6 +1681,10 @@ async function loadKma(){
       dd.hmax=Math.max(dd.hmax??-99,h.tmp);
       dd.hmin=Math.min(dd.hmin??99,h.tmp);
     }
+    if(h.pcp!=null){
+      dd.pcpSum=(dd.pcpSum??0)+h.pcp;
+      dd.pcpN=(dd.pcpN??0)+1;
+    }
   }
   // 최고/최저는 기상청이 발표한 TMX/TMN 만 쓴다.
   // 하루가 24시간 다 채워진 날에 한해 시간별 값에서 산출하고 * 로 구분한다.
@@ -1672,7 +1693,11 @@ async function loadKma(){
     const dd=daily[d];
     if(dd.tmx==null&&dd.n>=23&&dd.hmax!=null){dd.tmx=dd.hmax;dd.tmxD=true;}
     if(dd.tmn==null&&dd.n>=23&&dd.hmin!=null){dd.tmn=dd.hmin;dd.tmnD=true;}
-    delete dd.n; delete dd.hmax; delete dd.hmin;
+    // 강수량 합계도 같은 기준(24시간 다 채워진 날만)으로 시간별 PCP 를 더해 만든다.
+    // 기상청은 하루 총 강수량을 따로 발표하지 않아서 이 방법밖에 없다. 중기(4~10일)는
+    // PCP 자체가 없어 늘 null → 렌더 쪽에서 예보 모델(Open-Meteo) 합계로 자동 대체된다.
+    dd.pcp=(dd.pcpN>=23&&dd.pcpSum!=null)?dd.pcpSum:null;
+    delete dd.n; delete dd.hmax; delete dd.hmin; delete dd.pcpN; delete dd.pcpSum;
   }
   if(!Object.keys(hourly).length&&!obs){KMA={error:"기상청 자료 없음"};return;}
   const mid=await midP;
@@ -2007,7 +2032,9 @@ function render(){
     <div class="legend">칸마다 위에서부터 &nbsp;<b>시각</b> · <b>날씨</b> · <b>기온</b> · <b>💧강수확률</b> · <b>☔강수량(mm)</b> · <b>🌬️풍속(m/s)</b> · <b>미세</b> · <b>오존</b>
     <br><span style="opacity:.85">기상청 발표값에 코스 해발 ${COURSE.ele}m 보정 ${SADJ>=0?"+":""}${SADJ.toFixed(1)}° 를 적용한 값입니다.
     (기상청 5km 격자에도 지형고도가 일부 반영되어 있어 보정폭이 크지 않습니다.)
-    강수량(mm)은 기상청이 숫자로 주지 않아 항상 예보 모델 값입니다.
+    강수량(mm)은 기상청 발표 문구(예: "2.0mm", "1mm 미만")를 숫자로 환산한 값이며,
+    구간 표현("30.0~50.0mm" 등)은 중간값으로 근사합니다. 기상청 자료가 없는 시간만
+    예보 모델 값입니다.
     ${nMdl?`기상청 자료가 없는 ${nMdl}칸은 예보 모델(<b>모델</b> 표시)입니다.`:""}</span></div>`;
     html+=strip(UH.map(u=>({
       t:u.t,iso:u.iso,icon:u.icon,
@@ -2037,6 +2064,9 @@ function render(){
       tmax:kx!=null?kx:om_x,
       tmin:kn!=null?kn:om_n,
       pop:(useMid||useSht)&&k.pop!=null?k.pop:(da.precipitation_probability_max?.[i]??0),
+      // 강수량(mm)도 같은 원칙 — 단기(0~3일)는 그 날 기상청 시간별 PCP 합계가 있으면 그걸
+      // 쓴다. 기상청은 중기(4~10일) 강수량을 아예 안 줘서 그 구간은 항상 모델 합계다.
+      rain:(useSht&&k.pcp!=null)?k.pcp:(da.precipitation_sum?.[i]??0),
       wind:da.windspeed_10m_max?.[i]??0,
       icon:useMid?midIcon(k.wf):(useSht&&k.sky?kmaIcon(k.sky,k.pty):(WIC[da.weathercode?.[i]]||"🌡️")),
       desc:useMid?(k.wf||""):(useSht&&k.sky?kmaDesc(k.sky,k.pty):(WMO[da.weathercode?.[i]]||"")),
@@ -2059,7 +2089,9 @@ function render(){
       기상청 자료가 없는 날은 표시하지 않습니다.</span>
       ${KMA_KEY&&KMA&&!KMA.error?`<br>각 줄 아래 <b>🏛️ 기상청 발표값</b> 은 보정 전 원본입니다${KMA.mid?` · 중기 ${KMA.mid.base}`:""}`:""}
       ${AIR&&!AIR.error&&AIR.days&&Object.keys(AIR.days).length?`<br>😷 줄은 <b>에어코리아 미세먼지 예보</b>, 그 아래 <b>오존</b> 줄입니다 (오늘~모레는 등급, 이후는 농도 전망).`:""}
-      <br><span style="opacity:.85">※ 기온·강수확률·바람·하늘상태는 모두 기상청 발표값 기준입니다. UV·일출/일몰만 예보 모델을 씁니다.</span>
+      <br><span style="opacity:.85">※ 기온·강수확률·바람·하늘상태는 모두 기상청 발표값 기준입니다. 강수량(mm)은 0~3일은
+      기상청 시간별 발표를 합산한 값, 4일 이후는 기상청이 강수량 자체를 안 줘서 예보 모델
+      값입니다. UV·일출/일몰만 예보 모델을 씁니다.</span>
     </div>`;
     DSHOW.forEach((D)=>{
       const t=D.t,i=D.i;
@@ -2075,7 +2107,7 @@ function render(){
             <div class="dr-desc">${D.desc}</div>
             <span class="gi-badge" style="background:${g2.bg};color:${g2.fg}">${g2.s}점 ${g2.l}</span>
           </div>
-          <div class="dr-rain">💧${D.pop}%<br><span style="font-size:10px;opacity:.8">${(da.precipitation_sum?.[D.i]??0).toFixed(1)}mm</span></div>
+          <div class="dr-rain">💧${D.pop}%<br><span style="font-size:10px;opacity:.8">${D.rain.toFixed(1)}mm</span></div>
           <div class="dr-temps"><div class="dr-src">${D.src}</div>
             <span class="dr-lbl">최고</span>${D.tmax!=null?Math.round(D.tmax)+"°":"–"}<br>
             <span class="dr-lbl">최저</span><span class="dr-lo">${D.tmin!=null?Math.round(D.tmin)+"°":"–"}</span></div>
@@ -2084,7 +2116,7 @@ function render(){
         ${airDayLine(t)}
         <div class="dd${isOpen?" show":""}">
           <div><div class="ddi-l">체감 최고/최저</div><div class="ddi-v">${FD[t]?Math.round(FD[t].mx)+"° / "+Math.round(FD[t].mn)+"°":"–"}</div></div>
-          <div><div class="ddi-l">강수량</div><div class="ddi-v">${(da.precipitation_sum?.[i]??0).toFixed(1)} mm</div></div>
+          <div><div class="ddi-l">강수량</div><div class="ddi-v">${D.rain.toFixed(1)} mm</div></div>
           <div><div class="ddi-l">최대 풍속</div><div class="ddi-v">${fmtWind(D.wind??0)} m/s</div></div>
           <div><div class="ddi-l">풍향</div><div class="ddi-v">${wd(da.winddirection_10m_dominant?.[i]??0)}</div></div>
           <div><div class="ddi-l">UV 지수</div><div class="ddi-v">${da.uv_index_max?.[i]?.toFixed(1)||"-"}</div></div>
@@ -2123,7 +2155,7 @@ function render(){
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
     <div class="bar-wrap" style="width:${pw}px">`;
     DSHOW.forEach((D,i)=>{
-      const v=D.pop, kv=kpop[i], mm=(da.precipitation_sum?.[D.i]??0).toFixed(1);
+      const v=D.pop, kv=kpop[i], mm=D.rain.toFixed(1);
       html+=`<div class="bw"><div class="bv" style="color:#2060b0">${v??0}%${kv!=null?`<span style="color:#0a3a6a">/${kv}</span>`:""}</div>
         <div style="display:flex;align-items:flex-end;gap:2px">
           <div class="bar" style="width:${kv!=null?13:28}px;height:${Math.max(3,v??0)}px;background:#3080d0"></div>

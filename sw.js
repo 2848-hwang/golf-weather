@@ -11,7 +11,7 @@
  *
  * 앱을 수정한 뒤에는 아래 CACHE 버전을 올려야 기존 캐시가 정리된다.
  */
-const CACHE = "golf-weather-v9";
+const CACHE = "golf-weather-v10";
 const ASSETS = [
   "./",
   "./index.html",
